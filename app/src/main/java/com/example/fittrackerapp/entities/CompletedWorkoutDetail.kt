@@ -1,4 +1,4 @@
-package com.example.fittrackerapp
+package com.example.fittrackerapp.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -6,7 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "completed_exercise_details",
+    tableName = "completed_workout_details",
     foreignKeys = [
         ForeignKey(
             entity = CompletedWorkout::class,

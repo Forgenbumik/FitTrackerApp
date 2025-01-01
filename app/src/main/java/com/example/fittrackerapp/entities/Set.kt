@@ -1,4 +1,4 @@
-package com.example.fittrackerapp
+package com.example.fittrackerapp.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
