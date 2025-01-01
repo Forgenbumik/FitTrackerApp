@@ -1,9 +1,10 @@
-package com.example.fittrackerapp
+package com.example.fittrackerapp.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 
 @Entity(
     tableName = "completed_workouts",
@@ -16,8 +17,8 @@ import androidx.room.PrimaryKey
     ]
 )
 data class CompletedWorkout(
-    @PrimaryKey val id: Int,
+    @PrimaryKey override val id: Int,
     @ColumnInfo(name = "workout_id") val workoutId: Int,
-    @ColumnInfo(name = "duration") val duration: Int,
-    @ColumnInfo(name = "notes") val notes: String
-)
+    @ColumnInfo(name = "duration") override val duration: Int,
+    @ColumnInfo(name = "notes") override val notes: String
+): BaseCompletedWorkout()
