@@ -1,12 +1,10 @@
-package com.example.fittrackerapp.daoInterfaces
+package com.example.fittrackerapp.classes.daointerfaces
 
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Transaction
 import com.example.fittrackerapp.entities.Workout
-import com.example.fittrackerapp.entities.WorkoutDetail
 
 @Dao
 interface WorkoutWithExercisesDao {
