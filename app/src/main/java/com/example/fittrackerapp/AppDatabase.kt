@@ -15,9 +15,7 @@ import com.example.fittrackerapp.entities.*
         WorkoutDetail::class,
         CompletedWorkout::class,
         CompletedExercise::class,
-        Set::class,
-        CompletedWorkoutDetail::class,
-        CompletedExerciseDetail::class
+        Set::class
     ], version = 1
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -27,9 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutDetailDao(): WorkoutDetailDao
     abstract fun setDao(): SetDao
     abstract fun completedExerciseDao(): CompletedExerciseDao
-    abstract fun completedExerciseDetailDao(): CompletedExerciseDetailDao
     abstract fun completedWorkoutDao(): CompletedWorkoutDao
-    abstract fun completedWorkoutDetailDao(): CompletedWorkoutDetailDao
 }
 
 object Dependencies {
