@@ -13,6 +13,11 @@ import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
             entity = Exercise::class,
             parentColumns = ["id"],
             childColumns = ["exercise_id"]
+        ),
+        ForeignKey(
+            entity = CompletedWorkout::class,
+            parentColumns = ["id"],
+            childColumns = ["completed_workout_id"]
         )
     ]
 )
@@ -20,6 +25,7 @@ import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 data class CompletedExercise(
     @PrimaryKey override val id: Int,
     @ColumnInfo(name = "exercise_id") val exerciseId: Int,
+    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long,
     @ColumnInfo(name = "duration") override val duration: Int,
     @ColumnInfo(name = "notes") override val notes: String
 ) : BaseCompletedWorkout()

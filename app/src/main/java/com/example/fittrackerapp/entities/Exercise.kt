@@ -18,6 +18,7 @@ import com.example.fittrackerapp.abstractclasses.BaseWorkout
 )
 data class Exercise(
     @PrimaryKey override val id: Int,
+    @ColumnInfo override val type: String,
     @ColumnInfo(name = "name") override val name: String,
     @ColumnInfo(name = "category_id") val categoryId: Int
 ): BaseWorkout()
