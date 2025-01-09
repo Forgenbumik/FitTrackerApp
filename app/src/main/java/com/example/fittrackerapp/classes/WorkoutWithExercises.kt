@@ -12,7 +12,7 @@ data class WorkoutWithExercises(
 
     @Relation(
         parentColumn = "id",          // Связывающий столбец в Workout
-        entityColumn = "workout_id", // Связывающий столбец в WorkoutExercise
+        entityColumn = "workout_id", // Связывающий столбец в WorkoutDetail
         associateBy = Junction(
             value = WorkoutDetail::class,
             parentColumn = "workout_id",
