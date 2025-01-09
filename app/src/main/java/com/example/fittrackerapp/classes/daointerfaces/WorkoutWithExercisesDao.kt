@@ -4,18 +4,17 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
+import com.example.fittrackerapp.classes.WorkoutWithExercises
 import com.example.fittrackerapp.entities.Workout
 
 @Dao
 interface WorkoutWithExercisesDao {
-
-    @Insert(entity = Workout::class)
-    suspend fun insertNewWorkout(workout: Workout)
-
+    @Transaction // Обязательно для работы с @Relation
     @Query("SELECT * FROM workouts WHERE id = :workoutId")
-    suspend fun getWorkoutById(workoutId: Int): Workout?
+    suspend fun getWorkoutWithExercises(workoutId: Int): WorkoutWithExercises?
 
-    @Delete
-    suspend fun deleteWorkout(workout: Workout)
-
+    @Transaction
+    @Query("SELECT * FROM workouts")
+    suspend fun getAllWorkoutsWithExercises(): List<WorkoutWithExercises>
 }
