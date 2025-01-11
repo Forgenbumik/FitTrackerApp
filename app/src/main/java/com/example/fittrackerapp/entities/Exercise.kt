@@ -12,13 +12,14 @@ import com.example.fittrackerapp.abstractclasses.BaseWorkout
         ForeignKey(
             entity = Category::class,
             parentColumns = ["id"],
-            childColumns = ["category_id"]
+            childColumns = ["category_id"],
+            onUpdate = ForeignKey.CASCADE
         )
     ]
 )
 data class Exercise(
     @PrimaryKey override val id: Int,
     @ColumnInfo override val type: String,
-    @ColumnInfo(name = "name") override val name: String,
-    @ColumnInfo(name = "category_id") val categoryId: Int
+    @ColumnInfo override val name: String,
+    @ColumnInfo(name = "category_id") override val categoryId: Int
 ): BaseWorkout()

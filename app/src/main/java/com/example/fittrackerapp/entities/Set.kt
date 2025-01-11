@@ -12,7 +12,9 @@ import kotlin.collections.Set
         ForeignKey(
             entity = CompletedExercise::class,
             parentColumns = ["id"],
-            childColumns = ["completed_exercise_id"]
+            childColumns = ["completed_exercise_id"],
+            onDelete = ForeignKey.CASCADE,
+            onUpdate = ForeignKey.CASCADE
         )
     ]
 )

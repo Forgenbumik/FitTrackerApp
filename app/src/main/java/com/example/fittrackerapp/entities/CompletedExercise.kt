@@ -12,12 +12,15 @@ import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
         ForeignKey(
             entity = Exercise::class,
             parentColumns = ["id"],
-            childColumns = ["exercise_id"]
+            childColumns = ["exercise_id"],
+            onUpdate = ForeignKey.CASCADE
         ),
         ForeignKey(
             entity = CompletedWorkout::class,
             parentColumns = ["id"],
-            childColumns = ["completed_workout_id"]
+            childColumns = ["completed_workout_id"],
+            onDelete = ForeignKey.CASCADE,
+            onUpdate = ForeignKey.CASCADE
         )
     ]
 )
