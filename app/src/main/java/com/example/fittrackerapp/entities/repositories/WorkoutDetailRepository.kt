@@ -1,6 +1,6 @@
-package com.example.fittrackerapp.repositories
+package com.example.fittrackerapp.entities.repositories
 
-import com.example.fittrackerapp.daoInterfaces.WorkoutDetailDao
+import com.example.fittrackerapp.entities.daoInterfaces.WorkoutDetailDao
 import com.example.fittrackerapp.entities.WorkoutDetail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

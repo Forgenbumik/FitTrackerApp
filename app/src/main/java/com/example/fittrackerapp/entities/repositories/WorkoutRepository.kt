@@ -1,6 +1,6 @@
-package com.example.fittrackerapp.repositories
+package com.example.fittrackerapp.entities.repositories
 
-import com.example.fittrackerapp.daoInterfaces.WorkoutDao
+import com.example.fittrackerapp.entities.daoInterfaces.WorkoutDao
 import com.example.fittrackerapp.entities.Workout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -13,7 +13,7 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         }
     }
 
-    suspend fun getAll(): Flow<List<Workout>> {
+    suspend fun getAll(): List<Workout> {
         return withContext(Dispatchers.IO) {
             dao.getAll()
         }

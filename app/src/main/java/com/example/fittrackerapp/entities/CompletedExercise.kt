@@ -4,15 +4,20 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 
 @Entity(
     tableName = "completed_exercises",
     foreignKeys = [
         ForeignKey(
-            entity = Exercise::class,
+            entity = BaseWorkout::class,
             parentColumns = ["id"],
-            childColumns = ["exercise_id"],
+            childColumns = ["base_workout_id"],
+            onUpdate = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = BaseCompletedWorkout::class,
+            parentColumns = ["id"],
+            childColumns = ["base_completed_workout_id"],
             onUpdate = ForeignKey.CASCADE
         ),
         ForeignKey(
@@ -24,11 +29,10 @@ import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
         )
     ]
 )
-
 data class CompletedExercise(
-    @PrimaryKey override val id: Int,
-    @ColumnInfo(name = "exercise_id") val exerciseId: Int,
-    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long,
-    @ColumnInfo(name = "duration") override val duration: Int,
-    @ColumnInfo(name = "notes") override val notes: String
-) : BaseCompletedWorkout()
+    @PrimaryKey val id: Int,
+    @ColumnInfo(name = "base_completed_workout_id") val workoutId: Int,
+    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long
+): BaseCompletedWorkoutClass() {
+
+}

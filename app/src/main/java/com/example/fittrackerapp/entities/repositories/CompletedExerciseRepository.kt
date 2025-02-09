@@ -1,6 +1,6 @@
-package com.example.fittrackerapp.repositories
+package com.example.fittrackerapp.entities.repositories
 
-import com.example.fittrackerapp.daoInterfaces.CompletedExerciseDao
+import com.example.fittrackerapp.entities.daoInterfaces.CompletedExerciseDao
 import com.example.fittrackerapp.entities.CompletedExercise
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,5 +30,4 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
             dao.getById(completedExerciseId)
         }
     }
-
 }

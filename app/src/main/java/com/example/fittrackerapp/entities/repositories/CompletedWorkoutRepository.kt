@@ -1,6 +1,6 @@
-package com.example.fittrackerapp.repositories
+package com.example.fittrackerapp.entities.repositories
 
-import com.example.fittrackerapp.daoInterfaces.CompletedWorkoutDao
+import com.example.fittrackerapp.entities.daoInterfaces.CompletedWorkoutDao
 import com.example.fittrackerapp.entities.CompletedWorkout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -22,19 +22,13 @@ class CompletedWorkoutRepository(private val dao: CompletedWorkoutDao) {
 
     suspend fun delete(completedWorkout: CompletedWorkout) {
         withContext(Dispatchers.IO) {
-            return@withContext dao.delete(completedWorkout)
+            dao.delete(completedWorkout)
         }
     }
 
     suspend fun update(completedWorkout: CompletedWorkout) {
         withContext(Dispatchers.IO) {
-            return@withContext dao.update(completedWorkout)
-        }
-    }
-
-    suspend fun getAll(): Flow<List<CompletedWorkout>> {
-        return withContext(Dispatchers.IO) {
-            dao.getAll()
+            dao.update(completedWorkout)
         }
     }
 }

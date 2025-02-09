@@ -1,14 +1,14 @@
-package com.example.fittrackerapp.daoInterfaces
+package com.example.fittrackerapp.entities.daoInterfaces
 
+import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
-import com.example.fittrackerapp.entities.Category
 import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.Workout
 import kotlinx.coroutines.flow.Flow
 
+@Dao
 interface CompletedWorkoutDao {
     @Insert(entity = CompletedWorkout::class)
     suspend fun insert(completedWorkout: CompletedWorkout)
@@ -21,7 +21,4 @@ interface CompletedWorkoutDao {
 
     @Update
     suspend fun update(completedWorkout: CompletedWorkout)
-
-    @Query("SELECT * FROM completed_workouts")
-    suspend fun getAll(): Flow<List<CompletedWorkout>>
 }

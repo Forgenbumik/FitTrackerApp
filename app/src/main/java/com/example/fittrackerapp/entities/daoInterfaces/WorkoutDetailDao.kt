@@ -1,11 +1,13 @@
-package com.example.fittrackerapp.daoInterfaces
+package com.example.fittrackerapp.entities.daoInterfaces
 
+import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.entities.WorkoutDetail
 
+@Dao
 interface WorkoutDetailDao {
     @Insert(entity = WorkoutDetail::class)
     suspend fun insert(workoutDetail: WorkoutDetail)

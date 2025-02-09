@@ -1,6 +1,6 @@
-package com.example.fittrackerapp.repositories
+package com.example.fittrackerapp.entities.repositories
 
-import com.example.fittrackerapp.daoInterfaces.SetDao
+import com.example.fittrackerapp.entities.daoInterfaces.SetDao
 import com.example.fittrackerapp.entities.Set
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

@@ -13,9 +13,8 @@
         android:theme="@style/Theme.FitTrackerApp"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".uielements.MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.FitTrackerApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,6 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".uielements.WorkoutActivity" />
     </application>
 
 </manifest>

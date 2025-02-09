@@ -5,18 +5,16 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
-@Entity(
-    tableName = "completed_workouts",
+@Entity(tableName = "favourite_workouts",
     foreignKeys = [
         ForeignKey(
-            entity = BaseWorkout::class,
+            entity = Exercise::class,
             parentColumns = ["id"],
             childColumns = ["workout_id"],
             onUpdate = ForeignKey.CASCADE
         )
-    ]
-)
-data class CompletedWorkout(
-    @PrimaryKey val id: Int,
-    @ColumnInfo(name = "base_completed_workout_id") val baseCompletedWorkoutId: Int
+    ])
+data class FavouriteWorkout(
+    @PrimaryKey(autoGenerate = false) val favouriteWorkoutPosition: Int,
+    @ColumnInfo(name="workout_id") val workoutId: Int
 )

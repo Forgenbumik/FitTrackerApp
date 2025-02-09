@@ -1,20 +1,18 @@
 package com.example.fittrackerapp.classes.daointerfaces
 
 import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.fittrackerapp.classes.WorkoutWithExercises
-import com.example.fittrackerapp.entities.Workout
+import kotlinx.coroutines.flow.StateFlow
 
 @Dao
 interface WorkoutWithExercisesDao {
     @Transaction // Обязательно для работы с @Relation
     @Query("SELECT * FROM workouts WHERE id = :workoutId")
-    suspend fun getWorkoutWithExercises(workoutId: Int): WorkoutWithExercises?
+    suspend fun getById(workoutId: Int): WorkoutWithExercises?
 
     @Transaction
     @Query("SELECT * FROM workouts")
-    suspend fun getAllWorkoutsWithExercises(): List<WorkoutWithExercises>
+    suspend fun getAll(): List<WorkoutWithExercises>
 }
