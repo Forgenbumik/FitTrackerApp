@@ -1,17 +1,17 @@
 package com.example.fittrackerapp.abstractclasses.repositories
 
-import com.example.fittrackerapp.entities.BaseCompletedWorkout
-import com.example.fittrackerapp.entities.daoInterfaces.CompletedWorkoutDao
+import com.example.fittrackerapp.entities.LastWorkout
+import com.example.fittrackerapp.entities.LastWorkoutDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class CompletedWorkoutsAndExercisesRepository(
-    private val dao: CompletedWorkoutDao,
+    private val dao: LastWorkoutDao,
 ) {
 
-    suspend fun getLastCompletedWorkouts(): List<BaseCompletedWorkout> {
+    suspend fun getLastWorkouts(): List<LastWorkout> {
         return withContext(Dispatchers.IO) {
-            dao.getLastCompletedWorkouts()
+            dao.getAll()
         }
     }
 }

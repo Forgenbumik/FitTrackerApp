@@ -1,19 +1,33 @@
 package com.example.fittrackerapp
 
 import android.app.Application
+import android.util.Log
 import androidx.room.Room
 
-class App: Application() {
-    lateinit var appDatabase: AppDatabase
-        private set
+class App : Application() {
+
+    companion object {
+        lateinit var instance: App
+            private set
+    }
+
+    val appDatabase: AppDatabase by lazy {
+
+        Room.databaseBuilder(
+            applicationContext,  // Используем встроенный applicationContext
+            AppDatabase::class.java, "database.db"
+        )
+
+            .createFromAsset("asset.db")
+            .fallbackToDestructiveMigration()
+            .build()
+    }
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
 
-        // Создание БД внутри Application
-        appDatabase = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java, "database.db"
-        ).build()
+        appDatabase.openHelper.writableDatabase
+        Log.d("DatabaseTest", "Database created!")
     }
 }

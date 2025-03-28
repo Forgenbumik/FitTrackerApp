@@ -5,11 +5,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -17,18 +24,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.fittrackerapp.abstractclasses.BaseWorkout
+import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.viewmodels.MainScreenModel
+import com.example.fittrackerapp.viewmodels.MainScreenViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.App
-import com.example.fittrackerapp.abstractclasses.repositories.CompletedWorkoutsAndExercisesRepository
-import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
+import com.example.fittrackerapp.entities.FavouriteWorkout
+import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
+import com.example.fittrackerapp.entities.LastWorkout
+import com.example.fittrackerapp.entities.LastWorkoutRepository
+import com.example.fittrackerapp.viewmodels.MainScreenModelFactory
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: MainScreenModel
+    private lateinit var viewModel: MainScreenViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,54 +53,149 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(
                         modifier = Modifier.padding(innerPadding),
-                        onWorkoutClick = { workout -> onWorkoutClick(workout) }
+                        onFavouriteWorkoutClick = { workout -> onFavouriteWorkoutClick(workout) },
+                        onLastWorkoutClick = { workout -> onLastWorkoutClick(workout) },
+                        onAllWorkoutsClick = { onAllWorkoutsClick() }
                     )
                 }
             }
         }
 
         val app = application as App
-        val workoutsAndExercisesRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutsAndExercisesDao())
-        val completedWorkoutsAndExercisesRepository = CompletedWorkoutsAndExercisesRepository(app.appDatabase.completedWorkoutsAndExercisesDao())
 
-        viewModel = MainScreenModel(workoutsAndExercisesRepository, completedWorkoutsAndExercisesRepository)
+        val factory = MainScreenModelFactory(
+            FavouriteWorkoutRepository(app.appDatabase.favouriteWorkoutDao()),
+            LastWorkoutRepository(
+                app.appDatabase.lastWorkoutDao(),
+                app.appDatabase.workoutDao(),
+                app.appDatabase.exerciseDao()
+            )
+        )
+
+        viewModel = ViewModelProvider(this, factory).get(MainScreenViewModel::class.java)
     }
 
-    fun onWorkoutClick(workout: BaseWorkout) {
-        when (workout.type) {
-            "Workout" -> {
+    fun onFavouriteWorkoutClick(workout: FavouriteWorkout) {
+        when (workout.typeId) {
+            1 -> {
                 val intent = Intent(this, WorkoutActivity::class.java).apply {
-                    putExtra("workoutId", workout.id)
+                    putExtra("workoutId", workout.workoutId)
+                    putExtra("workoutName", workout.workoutName)
+                }
+                startActivity(intent)
+            }
+
+            2 -> {
+                val intent = Intent(this, ExerciseActivity::class.java).apply {
+                    putExtra("exerciseId", workout.workoutId)
+                    putExtra("exerciseName", workout.workoutName)
                 }
                 startActivity(intent)
             }
         }
     }
+
+    fun onLastWorkoutClick(workout: LastWorkout) {
+        when (workout.typeId) {
+            1 -> {
+                val intent = Intent(this, WorkoutActivity::class.java).apply {
+                    putExtra("workoutId", workout.completedWorkoutId)
+                }
+                startActivity(intent)
+            }
+            2 -> {
+                val intent = Intent(this, ExerciseActivity::class.java).apply {
+                    putExtra("exerciseId", workout.completedWorkoutId)
+                }
+                startActivity(intent)
+            }
+        }
+    }
+
+    fun onAllWorkoutsClick() {
+        val intent = Intent(this, AllWorkoutsActivity::class.java)
+        startActivity(intent)
+    }
 }
 
 @Composable
 fun MainScreen(
-    viewModel: MainScreenModel = viewModel(),
+    viewModel: MainScreenViewModel = viewModel(),
     modifier: Modifier,
-    onWorkoutClick: (BaseWorkout) -> Unit) {
+    onFavouriteWorkoutClick: (FavouriteWorkout) -> Unit,
+    onLastWorkoutClick: (LastWorkout) -> Unit,
+    onAllWorkoutsClick: () -> Unit
+) {
+    val last_workouts = viewModel.lastWorkouts.collectAsState().value
 
-    val workouts = viewModel.favouriteWorkoutsList.collectAsState()
-    val lastCompleted = viewModel.favouriteWorkoutsList.collectAsState()
-
-    Text("История тренировок")
-    WorkoutList(workouts.value, onWorkoutClick)
+    Column(
+        modifier = modifier.fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
+    ) {
+        Text("Избранные тренировки")
+        FavouriteWorkoutList(onFavouriteWorkoutClick, onAllWorkoutsClick)
+        LastWorkoutList(last_workouts, onLastWorkoutClick)
+    }
 }
 
 @Composable
-fun WorkoutList(workoutList: List<BaseWorkout>, onClick: (BaseWorkout) -> Unit) {
+fun FavouriteWorkoutList(
+    onFavouriteWorkoutClick: (FavouriteWorkout) -> Unit,
+    onAllWorkoutsClick: () -> Unit,
+    viewModel: MainScreenViewModel = viewModel()
+) {
+
+    val workouts = viewModel.favouriteWorkouts.collectAsState().value
+
+    val modifier = Modifier
+        .padding(16.dp)
+    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+        items(workouts) { workout ->
+            FavouriteWorkoutItem(modifier = Modifier
+                .fillMaxWidth().padding(8.dp),
+                workout, onFavouriteWorkoutClick)
+            HorizontalDivider()
+        }
+    }
+    OtherWorkouts(modifier, onAllWorkoutsClick)
+}
+
+@Composable
+fun FavouriteWorkoutItem(modifier: Modifier, workout: FavouriteWorkout, onClick: (FavouriteWorkout) -> Unit) {
+    Row(
+        modifier = modifier
+            .clickable { onClick(workout) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(workout.workoutName)
+    }
+}
+
+@Composable
+fun OtherWorkouts(
+    modifier: Modifier,
+    onClick: () -> Unit
+    )
+    {
+        Row(
+            modifier = modifier
+                .clickable { onClick() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Ещё")
+        }
+}
+
+@Composable
+fun LastWorkoutList(workoutList: List<LastWorkout>, onClick: (LastWorkout) -> Unit) {
     for (workout in workoutList) {
-        WorkoutItem(workout, onClick)
+        LastWorkoutItem(workout, onClick)
         HorizontalDivider()
     }
 }
 
 @Composable
-fun WorkoutItem(workout: BaseWorkout, onClick: (BaseWorkout) -> Unit) {
+fun LastWorkoutItem(workout: LastWorkout, onClick: (LastWorkout) -> Unit, viewModel: MainScreenViewModel = viewModel()) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,7 +203,8 @@ fun WorkoutItem(workout: BaseWorkout, onClick: (BaseWorkout) -> Unit) {
             .clickable { onClick(workout) },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(workout.name)
+        Text(workout.workoutName)
+        Text(viewModel.formatTime(workout.duration))
     }
 }
 

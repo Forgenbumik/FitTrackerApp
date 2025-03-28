@@ -66,4 +66,8 @@ dependencies {
     implementation(libs.androidx.room.ktx) // Дополнительно для Kotlin Coroutines, Kotlin Flows
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlin.stdlib)
+    kapt(libs.jetbrains.kotlinx.metadata.jvm)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.reorderable)
 }
