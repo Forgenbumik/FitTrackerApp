@@ -98,6 +98,8 @@ class ExecutingWorkoutActivity : ComponentActivity() {
             putExtra("completedWorkoutId", viewModel.completedWorkoutId)
         }
         startActivity(intent)
+
+        finish()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

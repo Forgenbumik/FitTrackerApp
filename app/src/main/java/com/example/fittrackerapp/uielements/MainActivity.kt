@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +29,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.viewmodels.MainScreenViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.entities.FavouriteWorkout
 import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
@@ -207,4 +207,3 @@ fun LastWorkoutItem(workout: LastWorkout, onClick: (LastWorkout) -> Unit, viewMo
         Text(viewModel.formatTime(workout.duration))
     }
 }
-
