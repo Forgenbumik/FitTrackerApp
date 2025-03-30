@@ -1,6 +1,5 @@
 package com.example.fittrackerapp.viewmodels
 
-import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -82,7 +81,7 @@ class ExecutingWorkoutViewModel (
 
     init {
         viewModelScope.launch {
-            workoutStopwatch()
+            runWorkoutTimer()
         }
         viewModelScope.launch {
             runWorkout()
@@ -106,7 +105,7 @@ class ExecutingWorkoutViewModel (
         lastWorkoutRepository.insertLastWorkout(completedWorkout)
     }
 
-    private suspend fun workoutStopwatch() {
+    private suspend fun runWorkoutTimer() {
         while (true) {
             when (workoutCondition.value) {
                 WorkoutCondition.PAUSE -> waitForResume()
@@ -115,12 +114,12 @@ class ExecutingWorkoutViewModel (
                     completedWorkoutRepository.update(completedWorkout)
                     break
                 }
-                else -> workoutTimer()
+                else -> workoutStopwatch()
             }
         }
     }
 
-    suspend fun workoutTimer() {
+    suspend fun workoutStopwatch() {
         while (workoutCondition.value != WorkoutCondition.PAUSE
             && workoutCondition.value != WorkoutCondition.END) {
             workoutSeconds++
@@ -141,7 +140,7 @@ class ExecutingWorkoutViewModel (
         viewModelScope.launch {
             workoutCondition.collectLatest { condition ->
                 when (condition) {
-                    WorkoutCondition.SET -> exerciseTimer()
+                    WorkoutCondition.SET -> exerciseStopwatch()
                     WorkoutCondition.PAUSE -> waitForResume()
                     WorkoutCondition.END -> return@collectLatest
                     else -> Unit
@@ -162,31 +161,50 @@ class ExecutingWorkoutViewModel (
                 _currentSet.value.setNumber = i
                 val setId = setsRepository.insert(_currentSet.value)
                 _setList.value += _currentSet.value
-                setStopWatch()
+                runSetTimer()
                 runRestTimer(setId, detail.restDuration)
                 restSeconds = 0
             }
         }
         _setList.value = emptyList()
-        restStopWatch(0)
+        runRestTimer(0,0)
         currentExercise.restDuration = restSeconds
         completedExerciseRepository.update(currentExercise)
     }
 
-    private suspend fun exerciseTimer() {
-        while (workoutCondition.value != WorkoutCondition.PAUSE
-            && workoutCondition.value != WorkoutCondition.END) {
+    private suspend fun runExerciseTimer() {
+        while (true) {
+            when (workoutCondition.value) {
+                WorkoutCondition.END -> break
+                WorkoutCondition.PAUSE -> waitForResume()
+                WorkoutCondition.REST_AFTER_EXERCISE -> restAfterExerciseStopwatch()
+                else -> exerciseStopwatch()
+            }
+        }
+    }
+
+    private suspend fun restAfterExerciseStopwatch() {
+        while (workoutCondition.value == WorkoutCondition.REST_AFTER_EXERCISE) {
+            restSeconds++
+            _stringRestTime.value = formatTime(restSeconds)
+            delay(1000)
+        }
+    }
+
+    private suspend fun exerciseStopwatch() {
+        while (workoutCondition.value == WorkoutCondition.SET
+            && workoutCondition.value == WorkoutCondition.REST) {
             exerciseSeconds++
             _stringExerciseTime.value = formatTime(exerciseSeconds)
             delay(1000)
         }
     }
 
-    private suspend fun setStopWatch() {
+    private suspend fun runSetTimer() {
         while (true) {
             when (workoutCondition.value) {
                 WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.SET -> runSetTimer()
+                WorkoutCondition.SET -> setStopwatch()
                 else -> break
             }
         }
@@ -199,7 +217,7 @@ class ExecutingWorkoutViewModel (
         }
     }
 
-    private suspend fun runSetTimer() {
+    private suspend fun setStopwatch() {
         while (workoutCondition.value == WorkoutCondition.SET) {
             setSeconds++
             _stringSetTime.value = formatTime(setSeconds)
@@ -212,12 +230,21 @@ class ExecutingWorkoutViewModel (
     }
 
     private suspend fun runRestTimer(setId: Long, restDuration: Int) {
-        restStopWatch(restDuration)
-
-        setsRepository.updateRestDuration(setId, restSeconds)
+        while (true) {
+            when (workoutCondition.value) {
+                WorkoutCondition.REST -> restStopwatch(restDuration)
+                WorkoutCondition.PAUSE -> waitForResume()
+                else -> break
+            }
+        }
+        if (setId != 0L) {
+            setsRepository.updateRestDuration(setId, restSeconds)
+        }
     }
 
-    suspend fun restStopWatch(duration: Int) {
+
+
+    suspend fun restStopwatch(duration: Int) {
         if (duration > 0) {
             while (workoutCondition.value == WorkoutCondition.REST
                 && restSeconds < duration) {
