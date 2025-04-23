@@ -220,11 +220,38 @@ class ExecutingWorkoutViewModel (
     private suspend fun runExerciseTimer() {
         while (true) {
             when (workoutCondition.value) {
-                WorkoutCondition.END -> break
                 WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.REST_AFTER_EXERCISE -> restAfterExerciseStopwatch()
-                else -> exerciseStopwatch()
+                WorkoutCondition.SET -> exerciseStopwatch()
+                WorkoutCondition.REST -> exerciseStopwatch()
+                else -> break
             }
+        }
+    }
+
+    private suspend fun exerciseStopwatch() {
+        while (workoutCondition.value == WorkoutCondition.SET
+            || workoutCondition.value == WorkoutCondition.REST) {
+
+            delay(10) // Мини-пауза, чтобы убедиться, что состояние не изменилось
+            if (workoutCondition.value != WorkoutCondition.SET
+                && workoutCondition.value != WorkoutCondition.REST) break
+
+            exerciseSeconds++
+            _stringExerciseTime.value = formatTime(exerciseSeconds)
+            delay(1000)
+        }
+        exerciseSeconds = 0
+    }
+
+    private suspend fun runRestAfterExerciseTimer() {
+        while (true) {
+            when (workoutCondition.value) {
+                WorkoutCondition.REST_AFTER_EXERCISE -> restAfterExerciseStopwatch()
+                WorkoutCondition.PAUSE -> waitForResume()
+                else -> break
+            }
+            exerciseSeconds = 0
+            restSeconds = 0
         }
     }
 
@@ -234,15 +261,7 @@ class ExecutingWorkoutViewModel (
             _stringRestTime.value = formatTime(restSeconds)
             delay(1000)
         }
-    }
 
-    private suspend fun exerciseStopwatch() {
-        while (workoutCondition.value == WorkoutCondition.SET
-            && workoutCondition.value == WorkoutCondition.REST) {
-            exerciseSeconds++
-            _stringExerciseTime.value = formatTime(exerciseSeconds)
-            delay(1000)
-        }
     }
 
     private suspend fun runSetTimer() {
