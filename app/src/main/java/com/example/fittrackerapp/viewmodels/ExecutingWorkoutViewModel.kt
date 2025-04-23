@@ -189,7 +189,6 @@ class ExecutingWorkoutViewModel (
                     WorkoutCondition.END -> return@collectLatest
                     else -> Unit
                 }
-                currentExercise.restDuration = restSeconds
             }
         }
         currentExercise = CompletedExercise(0, detail.exerciseId, 0, "", LocalDateTime.now(), completedWorkoutId, 0, 0, 0)
@@ -200,13 +199,13 @@ class ExecutingWorkoutViewModel (
         for (i in 1..detail.setsNumber) {
             if (workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && workoutCondition.value != WorkoutCondition.END) {
-                _currentSet.value.completedExerciseId = currentExerciseId
-                _currentSet.value.reps = detail.reps
-                _currentSet.value.setNumber = i
+
+
+                runSetTimer()
+                _currentSet.value = Set(0, currentExerciseId, setSeconds, detail.reps, 0.0, 0, i)
                 val setId = setsRepository.insert(_currentSet.value)
                 _currentSet.value.id = setId
                 _setList.value += _currentSet.value
-                runSetTimer()
                 runRestTimer(setId, detail.restDuration)
                 restSeconds = 0
             }
@@ -287,10 +286,6 @@ class ExecutingWorkoutViewModel (
             _stringSetTime.value = formatTime(setSeconds)
             delay(1000)
         }
-        _currentSet.value.duration = setSeconds
-        setsRepository.update(_currentSet.value)
-        _currentSet.value = Set(0, currentExerciseId, 0, 0, 0.0, 0, 0)
-        setSeconds = 0
     }
 
     private suspend fun runRestTimer(setId: Long, restDuration: Int) {
@@ -304,9 +299,8 @@ class ExecutingWorkoutViewModel (
         if (setId != 0L) {
             setsRepository.updateRestDuration(setId, restSeconds)
         }
+        setSeconds = 0
     }
-
-
 
     suspend fun restStopwatch(duration: Int) {
         if (duration > 0) {
