@@ -108,6 +108,7 @@ class ExecutingWorkoutViewModel (
 
     private suspend fun runWorkout() {
         completedWorkoutId = completedWorkoutRepository.insert(completedWorkout)
+        completedWorkout.id = completedWorkoutId
         var details = workoutDetailRepository.getByWorkoutId(workoutId).toMutableList()
         val firstExercise = details.first { it.exerciseId == currentExerciseId }
         details.remove(firstExercise)
@@ -191,9 +192,9 @@ class ExecutingWorkoutViewModel (
                 currentExercise.restDuration = restSeconds
             }
         }
-        currentExercise = CompletedExercise(0, detail.exerciseId, 0, "", LocalDateTime.now(), completedWorkoutId, 0)
+        currentExercise = CompletedExercise(0, detail.exerciseId, 0, "", LocalDateTime.now(), completedWorkoutId, 0, 0, 0)
         currentExerciseId = completedExerciseRepository.insert(currentExercise)
-
+        currentExercise.id = currentExerciseId
         _currentExerciseName.value = detail.exerciseName
 
         for (i in 1..detail.setsNumber) {
@@ -203,6 +204,7 @@ class ExecutingWorkoutViewModel (
                 _currentSet.value.reps = detail.reps
                 _currentSet.value.setNumber = i
                 val setId = setsRepository.insert(_currentSet.value)
+                _currentSet.value.id = setId
                 _setList.value += _currentSet.value
                 runSetTimer()
                 runRestTimer(setId, detail.restDuration)
