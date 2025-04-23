@@ -27,11 +27,12 @@ import java.time.LocalDateTime
     ]
 )
 data class CompletedWorkout(
-    @PrimaryKey(autoGenerate = true) override val id: Long = 0,
+    @PrimaryKey(autoGenerate = true) override var id: Long = 0,
     @ColumnInfo override var duration: Int,
     @ColumnInfo override val notes: String?,
     @ColumnInfo(name = "begin_time") override val beginTime: LocalDateTime,
-    @ColumnInfo(name = "workout_id") val workoutId: Long
+    @ColumnInfo(name = "workout_id") val workoutId: Long,
+    @ColumnInfo(name = "exercises_number") var exercisesNumber: Int
 ): BaseCompletedWorkout()
 
 @Dao

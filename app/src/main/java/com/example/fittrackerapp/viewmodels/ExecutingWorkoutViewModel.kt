@@ -34,7 +34,7 @@ class ExecutingWorkoutViewModel (
     private val lastWorkoutRepository: LastWorkoutRepository
 ): ViewModel() {
 
-    private val completedWorkout = CompletedWorkout(0, 0, "", LocalDateTime.now(), workoutId)
+    private val completedWorkout = CompletedWorkout(0, 0, "", LocalDateTime.now(), workoutId, 0)
 
     var completedWorkoutId = 0L
 
