@@ -282,7 +282,7 @@ class ExecutingWorkoutViewModel (
 
     fun formatTime(secs: Int): String {
         val seconds = secs % 60
-        val minutes = secs / 60
+        val minutes = secs / 60 % 60
         val hours = secs / 3600
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
