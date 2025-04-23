@@ -15,6 +15,7 @@ import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -79,6 +80,12 @@ class ExecutingWorkoutViewModel (
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
 
+    private val _isChangingSet = MutableStateFlow(false)
+    val isChangingSet: StateFlow<Boolean> = _isChangingSet
+
+    private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(null)
+    val changingSet: StateFlow<Set?> = _changingSet
+
     init {
         viewModelScope.launch {
             runWorkoutTimer()
@@ -86,6 +93,10 @@ class ExecutingWorkoutViewModel (
         viewModelScope.launch {
             runWorkout()
         }
+    }
+
+    fun setIsChangingSet(isChangingSet: Boolean) {
+        _isChangingSet.value = isChangingSet
     }
 
     private suspend fun runWorkout() {
@@ -103,6 +114,13 @@ class ExecutingWorkoutViewModel (
             }
         }
         lastWorkoutRepository.insertLastWorkout(completedWorkout)
+    fun updateSet(set: Set, reps: Int, weight: Double) {
+        set.reps = reps
+        set.weight = weight
+        viewModelScope.launch {
+            setsRepository.update(set)
+        }
+
     }
 
     private suspend fun runWorkoutTimer() {
@@ -267,6 +285,10 @@ class ExecutingWorkoutViewModel (
         val minutes = secs / 60
         val hours = secs / 3600
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
+    }
+
+    fun setChangingSet(set: Set?) {
+        _changingSet.value = set;
     }
 }
 

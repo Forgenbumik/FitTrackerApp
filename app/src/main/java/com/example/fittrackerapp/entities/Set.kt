@@ -25,11 +25,11 @@ import kotlinx.coroutines.withContext
     ]
 )
 data class Set(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @PrimaryKey(autoGenerate = true) var id: Long = 0,
     @ColumnInfo(name = "completed_exercise_id") var completedExerciseId: Long,
     @ColumnInfo(name = "duration") var duration: Int,
     @ColumnInfo(name = "reps") var reps: Int,
-    @ColumnInfo(name = "weight") val weight: Double,
+    @ColumnInfo(name = "weight") var weight: Double,
     @ColumnInfo(name = "rest_duration") val restDuration: Int,
     @ColumnInfo(name = "set_number") var setNumber: Int
 )
