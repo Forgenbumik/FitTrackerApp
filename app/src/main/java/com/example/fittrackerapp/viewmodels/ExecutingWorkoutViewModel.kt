@@ -38,6 +38,8 @@ class ExecutingWorkoutViewModel (
 
     var completedWorkoutId = 0L
 
+    private var exerciseJob: Job? = null
+
     private lateinit var currentExercise: CompletedExercise
 
     private var currentExerciseId = exerciseId
@@ -155,10 +157,11 @@ class ExecutingWorkoutViewModel (
 
     private suspend fun runExercise(detail: WorkoutDetail) {
 
-        viewModelScope.launch {
+        exerciseJob?.cancel()
+        exerciseJob = viewModelScope.launch {
             workoutCondition.collectLatest { condition ->
                 when (condition) {
-                    WorkoutCondition.SET -> exerciseStopwatch()
+                    WorkoutCondition.SET, WorkoutCondition.REST -> runExerciseTimer()
                     WorkoutCondition.PAUSE -> waitForResume()
                     WorkoutCondition.END -> return@collectLatest
                     else -> Unit
