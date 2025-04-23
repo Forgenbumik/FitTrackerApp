@@ -47,7 +47,7 @@ class ExecutingWorkoutViewModel (
     private val _currentExerciseName = MutableStateFlow("")
     val currentExerciseName: StateFlow<String> = _currentExerciseName
 
-    private val _nextExercise = MutableStateFlow<WorkoutDetail>(WorkoutDetail(0, 0, 0, 0, "", 0, 0, 0, false))
+    private val _nextExercise = MutableStateFlow(WorkoutDetail(0, 0, 0, 0, "", 0, 0, 0, false))
     val nextExercise: StateFlow<WorkoutDetail> = _nextExercise
 
     private val _currentSet: MutableStateFlow<Set> = MutableStateFlow(Set(0, completedExerciseId = 0, duration = 0, reps = 0, weight = 0.0, restDuration = 0, setNumber = 0))
@@ -116,6 +116,9 @@ class ExecutingWorkoutViewModel (
             }
         }
         lastWorkoutRepository.insertLastWorkout(completedWorkout)
+        for (i in 0..(details.size-1)) {
+            runExercise(details[i])
+        }
     fun updateSet(set: Set, reps: Int, weight: Double) {
         set.reps = reps
         set.weight = weight
