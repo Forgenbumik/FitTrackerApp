@@ -129,11 +129,7 @@ class ExecutingWorkoutViewModel (
         while (true) {
             when (workoutCondition.value) {
                 WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.END -> {
-                    completedWorkout.duration = workoutSeconds
-                    completedWorkoutRepository.update(completedWorkout)
-                    break
-                }
+                WorkoutCondition.END -> break
                 else -> workoutStopwatch()
             }
         }
