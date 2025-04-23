@@ -119,6 +119,12 @@ class ExecutingWorkoutViewModel (
         for (i in 0..(details.size-1)) {
             runExercise(details[i])
         }
+            if (i+1 != details.size) {
+                _nextExercise.value = details[i+1]
+            }
+            else {
+                _isLastExercise.value = true
+            }
     fun updateSet(set: Set, reps: Int, weight: Double) {
         set.reps = reps
         set.weight = weight
