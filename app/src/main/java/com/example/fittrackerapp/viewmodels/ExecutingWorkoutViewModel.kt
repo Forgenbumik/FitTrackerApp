@@ -82,6 +82,11 @@ class ExecutingWorkoutViewModel (
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
 
+    private var isLastWorkoutInserted = false
+
+    private val _isLastExercise = MutableStateFlow(false)
+    val isLastExercise: StateFlow<Boolean> = _isLastExercise
+
     private val _isChangingSet = MutableStateFlow(false)
     val isChangingSet: StateFlow<Boolean> = _isChangingSet
 
@@ -107,24 +112,36 @@ class ExecutingWorkoutViewModel (
         val firstExercise = details.first { it.exerciseId == currentExerciseId }
         details.remove(firstExercise)
         details.add(0, firstExercise)
-        while (workoutCondition.value != WorkoutCondition.END) {
-            for (i in 0..(details.size-1)) {
-                if (i+1 != details.size) {
-                    _nextExercise.value = details[i+1]
-                }
-                runExercise(details[i])
-            }
-        }
-        lastWorkoutRepository.insertLastWorkout(completedWorkout)
         for (i in 0..(details.size-1)) {
-            runExercise(details[i])
-        }
             if (i+1 != details.size) {
                 _nextExercise.value = details[i+1]
             }
             else {
                 _isLastExercise.value = true
             }
+            runExercise(details[i])
+            setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
+            runRestAfterExerciseTimer()
+            currentExercise.restDuration = restSeconds
+            completedExerciseRepository.update(currentExercise)
+            completedWorkout.exercisesNumber++
+        }
+
+        completedWorkout.duration = workoutSeconds
+        completedWorkoutRepository.update(completedWorkout)
+        delay(1000)
+        insertLastWorkout()
+        setCondition(WorkoutCondition.END)
+    }
+
+     fun insertLastWorkout() {
+         if (isLastWorkoutInserted) return
+         viewModelScope.launch {
+             lastWorkoutRepository.insertLastWorkout(completedWorkout)
+         }
+         isLastWorkoutInserted = true
+    }
+
     fun updateSet(set: Set, reps: Int, weight: Double) {
         set.reps = reps
         set.weight = weight
