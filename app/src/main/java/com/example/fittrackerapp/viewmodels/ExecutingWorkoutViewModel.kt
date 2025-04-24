@@ -313,7 +313,7 @@ class ExecutingWorkoutViewModel (
             }
         }
         else {
-            while (workoutCondition.value == WorkoutCondition.REST || workoutCondition.value == WorkoutCondition.REST_AFTER_EXERCISE) {
+            while (workoutCondition.value == WorkoutCondition.REST) {
                 restSeconds++
                 _stringRestTime.value = formatTime(restSeconds)
                 delay(1000)
