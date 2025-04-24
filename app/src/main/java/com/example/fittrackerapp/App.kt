@@ -17,9 +17,7 @@ class App : Application() {
             applicationContext,  // Используем встроенный applicationContext
             AppDatabase::class.java, "database.db"
         )
-
             .createFromAsset("asset.db")
-            .fallbackToDestructiveMigration()
             .build()
     }
 
