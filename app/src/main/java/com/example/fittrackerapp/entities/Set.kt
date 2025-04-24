@@ -51,6 +51,9 @@ interface SetDao {
 
     @Query("UPDATE sets SET rest_duration = :restDuration WHERE id = :id")
     suspend fun updateRestDuration(id: Long, restDuration: Int)
+
+    @Query("SELECT * FROM sets WHERE completed_exercise_id = :completedExerciseId")
+    suspend fun getByCompletedExerciseId(completedExerciseId: Long): List<Set>
 }
 
 class SetRepository(private val dao: SetDao) {
@@ -83,5 +86,12 @@ class SetRepository(private val dao: SetDao) {
         withContext(Dispatchers.IO) {
             dao.updateRestDuration(id, restDuration)
         }
+    }
+
+    suspend fun getByCompletedExerciseId(completedExerciseId: Long): List<Set> {
+        return withContext(Dispatchers.IO) {
+            dao.getByCompletedExerciseId(completedExerciseId)
+        }
+
     }
 }
