@@ -64,7 +64,7 @@ class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
         }
     }
 
-    suspend fun insertLastWorkout(baseCompletedWorkout: BaseCompletedWorkout) {
+    suspend fun insertLastWorkout(baseCompletedWorkout: BaseCompletedWorkout): Long {
         val lastWorkouts = getLastWorkouts().toMutableList()
         if (lastWorkouts.size == 3) {
             lastWorkouts.removeAt(0)
@@ -76,7 +76,7 @@ class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
                 val baseWorkout = workoutDao.getById(completedWorkout.workoutId)
                 if (baseWorkout != null) {
                     workout = LastWorkout(0, completedWorkout.id, baseWorkout.name, 1, completedWorkout.duration)
-                    lastWorkoutDao.insert(workout)
+                    return lastWorkoutDao.insert(workout)
                 }
             }
             is CompletedExercise -> {
@@ -84,9 +84,11 @@ class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
                 val exercise = exerciseDao.getById(completedExercise.exerciseId)
                 if (exercise != null) {
                     workout = LastWorkout(0, completedExercise.id, exercise.name, 2, completedExercise.duration)
-                    lastWorkoutDao.insert(workout)
+                    return lastWorkoutDao.insert(workout)
                 }
             }
         }
+        return 0
+
     }
 }
