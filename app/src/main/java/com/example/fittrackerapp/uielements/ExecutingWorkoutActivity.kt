@@ -159,6 +159,8 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val lastCondition = viewModel.lastCondition.collectAsState().value
 
+    val isLastExercise = viewModel.isLastExercise.collectAsState().value
+
     val nextExercise = viewModel.nextExercise.collectAsState().value
 
     val setList = viewModel.setList.collectAsState()
