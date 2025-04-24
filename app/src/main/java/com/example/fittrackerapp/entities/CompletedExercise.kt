@@ -52,7 +52,7 @@ interface CompletedExerciseDao {
     fun insert(completedExercise: CompletedExercise): Long
 
     @Query("SELECT * FROM completed_exercises WHERE id = :completedExerciseId")
-    suspend fun getById(completedExerciseId: Long): CompletedExercise?
+    suspend fun getById(completedExerciseId: Long): CompletedExercise
 
     @Delete
     suspend fun delete(completedExercise: CompletedExercise)
@@ -62,6 +62,12 @@ interface CompletedExerciseDao {
 
     @Query("SELECT * FROM completed_exercises")
     suspend fun getAll(): List<CompletedExercise>
+
+    @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = :completedWorkoutId")
+    suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise>
+
+    @Query("SELECT * FROM exercises WHERE id = :exerciseId")
+    suspend fun getExerciseById(exerciseId: Long): Exercise?
 }
 
 class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
