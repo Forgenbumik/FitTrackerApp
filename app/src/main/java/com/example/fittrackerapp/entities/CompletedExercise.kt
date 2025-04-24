@@ -101,4 +101,17 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
             dao.getAll()
         }
     }
+
+    suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise> {
+        return withContext(Dispatchers.IO) {
+            dao.getByCompletedWorkoutId(completedWorkoutId)
+        }
+    }
+
+    suspend fun getExerciseName(exerciseId: Long): String {
+        return withContext(Dispatchers.IO) {
+            val exercise = dao.getExerciseById(exerciseId)
+            exercise?.name ?: ""
+        }
+    }
 }
