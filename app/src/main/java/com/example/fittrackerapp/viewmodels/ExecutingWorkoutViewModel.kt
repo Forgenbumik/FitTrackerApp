@@ -320,6 +320,9 @@ class ExecutingWorkoutViewModel (
                 delay(1000)
             }
         }
+        if (restSeconds == duration) {
+            setCondition(WorkoutCondition.SET)
+        }
     }
 
     fun formatTime(secs: Int): String {
