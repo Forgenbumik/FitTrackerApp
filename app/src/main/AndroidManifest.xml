@@ -29,6 +29,7 @@
         <activity android:name=".uielements.ExecutingWorkoutActivity" />
         <activity android:name=".uielements.AllWorkoutsActivity" />
         <activity android:name=".uielements.ResultsActivity"/>
+        <activity android:name=".uielements.CreatingWorkoutActivity"/>
     </application>
 
 </manifest>
