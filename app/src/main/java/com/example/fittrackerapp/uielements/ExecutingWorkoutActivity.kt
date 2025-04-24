@@ -167,9 +167,15 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
         Text(workoutName)
         Text(stringWorkoutTime)
         Text(exerciseName)
-        SetsTable(setList, formatTime)
+        if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
+            SetsTable(setList, formatTime, setChangingSet, changingSet)
+        }
+
         Text(stringExerciseTime)
-        if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
+        if ((workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
+                    || lastCondition == WorkoutCondition.REST_AFTER_EXERCISE
+                    && workoutCondition == WorkoutCondition.PAUSE)
+            && !isLastExercise) {
             ExerciseInformation(nextExercise, stringRestTime, formatTime)
         }
         LastSet(lastCondition, workoutCondition, stringSetTime,
