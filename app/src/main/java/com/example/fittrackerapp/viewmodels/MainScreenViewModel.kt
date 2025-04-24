@@ -43,7 +43,7 @@ class MainScreenViewModel(
         val hours = secs / 3600
         val minutes = secs / 60
         val seconds = secs % 60
-        return String.format("%:%02d:%02d", minutes, seconds)
+        return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 
     fun moveItem(from: Int, to: Int) { //для перетаскивания элементов списка
