@@ -28,6 +28,7 @@ class CreatingWorkoutViewModel(
     init {
         viewModelScope.launch {
             generateName()
+
         }
 
     }
@@ -61,7 +62,7 @@ class CreatingWorkoutViewModelFactory(
     @RequiresApi(Build.VERSION_CODES.O)
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
-            modelClass.isAssignableFrom(ExecutingWorkoutViewModel::class.java) -> {
+            modelClass.isAssignableFrom(CreatingWorkoutViewModel::class.java) -> {
                 CreatingWorkoutViewModel(workoutRepository, workoutDetailRepository, exerciseRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class")
