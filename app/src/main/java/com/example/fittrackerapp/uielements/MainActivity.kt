@@ -36,10 +36,6 @@ import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.viewmodels.MainScreenModelFactory
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorderAfterLongPress
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
 
 class MainActivity : ComponentActivity() {
 
@@ -98,13 +94,13 @@ class MainActivity : ComponentActivity() {
     fun onLastWorkoutClick(workout: LastWorkout) {
         when (workout.typeId) {
             1 -> {
-                val intent = Intent(this, WorkoutActivity::class.java).apply {
+                val intent = Intent(this, CompletedWorkoutActivity::class.java).apply {
                     putExtra("workoutId", workout.completedWorkoutId)
                 }
                 startActivity(intent)
             }
             2 -> {
-                val intent = Intent(this, ExerciseActivity::class.java).apply {
+                val intent = Intent(this, CompletedExerciseActivity::class.java).apply {
                     putExtra("exerciseId", workout.completedWorkoutId)
                 }
                 startActivity(intent)
