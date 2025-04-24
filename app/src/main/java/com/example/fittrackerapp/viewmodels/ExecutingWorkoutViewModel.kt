@@ -213,8 +213,7 @@ class ExecutingWorkoutViewModel (
             }
         }
         _setList.value = emptyList()
-        runRestTimer(0,0)
-        currentExercise.restDuration = restSeconds
+        currentExercise.duration = exerciseSeconds
         completedExerciseRepository.update(currentExercise)
     }
 
