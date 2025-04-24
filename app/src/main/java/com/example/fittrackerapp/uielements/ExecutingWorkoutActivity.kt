@@ -155,6 +155,8 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val workoutCondition = viewModel.workoutCondition.collectAsState().value
 
+    if (workoutCondition == WorkoutCondition.END) onEndClick()
+
     val lastCondition = viewModel.lastCondition.collectAsState().value
 
     val nextExercise = viewModel.nextExercise.collectAsState().value
