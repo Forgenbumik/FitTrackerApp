@@ -65,12 +65,12 @@ class CreatingWorkoutActivity: ComponentActivity() {
 @Composable
 fun MainScreen(modifier: Modifier, viewModel: CreatingWorkoutViewModel = viewModel()) {
     val exercises = viewModel.exercisesList.collectAsState().value
-    nameField(viewModel)
+    nameField()
     exercisesList(exercises)
 }
 
 @Composable
-fun nameField(viewModel: CreatingWorkoutViewModel) {
+fun nameField(viewModel: CreatingWorkoutViewModel = viewModel()) {
     val workoutName = viewModel.getWorkoutName()
     TextField(
         value = workoutName,
