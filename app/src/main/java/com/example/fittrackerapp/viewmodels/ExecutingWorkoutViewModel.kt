@@ -208,6 +208,8 @@ class ExecutingWorkoutViewModel (
                 _setList.value += _currentSet.value
                 runRestTimer(setId, detail.restDuration)
                 restSeconds = 0
+                currentExercise.setsNumber++
+                currentExercise.totalReps += detail.reps
             }
         }
         _setList.value = emptyList()
