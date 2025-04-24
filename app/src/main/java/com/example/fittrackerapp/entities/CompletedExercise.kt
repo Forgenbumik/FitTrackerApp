@@ -90,7 +90,7 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
         }
     }
 
-    suspend fun getById(completedExerciseId: Long): CompletedExercise? {
+    suspend fun getById(completedExerciseId: Long): CompletedExercise {
         return withContext(Dispatchers.IO) {
             dao.getById(completedExerciseId)
         }
