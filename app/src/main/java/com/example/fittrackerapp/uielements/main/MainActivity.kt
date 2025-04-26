@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.uielements
+package com.example.fittrackerapp.uielements.main
 
 import android.content.Intent
 import android.os.Bundle
@@ -23,19 +23,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.viewmodels.MainScreenViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.entities.FavouriteWorkout
 import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
-import com.example.fittrackerapp.viewmodels.MainScreenModelFactory
+import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
+import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
+import com.example.fittrackerapp.uielements.workout.WorkoutActivity
+import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
+import com.example.fittrackerapp.uielements.exercise.ExerciseActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -47,7 +48,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(
+                    CompletedExerciseMainScreen(
                         modifier = Modifier.padding(innerPadding),
                         onFavouriteWorkoutClick = { workout -> onFavouriteWorkoutClick(workout) },
                         onLastWorkoutClick = { workout -> onLastWorkoutClick(workout) },
@@ -109,13 +110,13 @@ class MainActivity : ComponentActivity() {
     }
 
     fun onAllWorkoutsClick() {
-        val intent = Intent(this, AllWorkoutsActivity::class.java)
+        val intent = Intent(this, UsedWorkoutsActivity::class.java)
         startActivity(intent)
     }
 }
 
 @Composable
-fun MainScreen(
+fun CompletedExerciseMainScreen(
     viewModel: MainScreenViewModel = viewModel(),
     modifier: Modifier,
     onFavouriteWorkoutClick: (FavouriteWorkout) -> Unit,

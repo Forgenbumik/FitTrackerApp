@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.viewmodels
+package com.example.fittrackerapp.uielements.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

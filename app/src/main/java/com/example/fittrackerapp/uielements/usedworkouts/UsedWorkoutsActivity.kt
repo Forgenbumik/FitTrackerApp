@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.uielements
+package com.example.fittrackerapp.uielements.usedworkouts
 
 import android.content.Intent
 import android.os.Bundle
@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,11 +33,10 @@ import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercis
 import com.example.fittrackerapp.entities.FavouriteWorkout
 import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.viewmodels.AllWorkoutsModelFactory
-import com.example.fittrackerapp.viewmodels.AllWorkoutsViewModel
+import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
 
-class AllWorkoutsActivity: ComponentActivity() {
-    private lateinit var viewModel: AllWorkoutsViewModel
+class UsedWorkoutsActivity: ComponentActivity() {
+    private lateinit var viewModel: UsedWorkoutsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +45,7 @@ class AllWorkoutsActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
+                    CompletedExerciseMainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
                         ::addWorkoutToFavourites, ::deleteWorkoutFromFavourites)
                 }
             }
@@ -57,11 +55,11 @@ class AllWorkoutsActivity: ComponentActivity() {
 
         val favouriteWorkoutRepository = FavouriteWorkoutRepository(app.appDatabase.favouriteWorkoutDao())
 
-        val workoutRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
+        val workoutRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao(), app.appDatabase.favouriteWorkoutDao())
 
-        val factory = AllWorkoutsModelFactory(favouriteWorkoutRepository, workoutRepository)
+        val factory = UsedWorkoutsModelFactory(favouriteWorkoutRepository, workoutRepository)
 
-        viewModel = ViewModelProvider(this, factory).get(AllWorkoutsViewModel::class.java)
+        viewModel = ViewModelProvider(this, factory).get(UsedWorkoutsViewModel::class.java)
     }
 
     fun onPlusClick() {
@@ -81,9 +79,9 @@ class AllWorkoutsActivity: ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(viewModel: AllWorkoutsViewModel, modifier: Modifier = Modifier,
-               onPlusClick: () -> Unit, AddFavouriteClick: (BaseWorkout) -> Unit,
-               DeleteFavouriteClick: (FavouriteWorkout) -> Unit) {
+fun CompletedExerciseMainScreen(viewModel: UsedWorkoutsViewModel, modifier: Modifier = Modifier,
+                                onPlusClick: () -> Unit, AddFavouriteClick: (BaseWorkout) -> Unit,
+                                DeleteFavouriteClick: (FavouriteWorkout) -> Unit) {
     UpperBar(onPlusClick)
     val favouriteWorkouts = viewModel.favouriteWorkouts.collectAsState().value
     val workouts = viewModel.workoutsList.collectAsState().value

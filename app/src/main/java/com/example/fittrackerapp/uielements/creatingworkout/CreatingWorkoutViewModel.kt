@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.viewmodels
+package com.example.fittrackerapp.uielements.creatingworkout
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -28,7 +28,6 @@ class CreatingWorkoutViewModel(
     init {
         viewModelScope.launch {
             generateName()
-
         }
 
     }
@@ -50,7 +49,7 @@ class CreatingWorkoutViewModel(
     }
 
     suspend fun getExercises() {
-        exerciseRepository.getAll()
+        exerciseRepository.getAllExceptAdded()
     }
 }
 

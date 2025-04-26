@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.uielements
+package com.example.fittrackerapp.uielements.creatingworkout
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -30,8 +30,6 @@ import com.example.fittrackerapp.entities.WorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.viewmodels.CreatingWorkoutViewModel
-import com.example.fittrackerapp.viewmodels.CreatingWorkoutViewModelFactory
 
 class CreatingWorkoutActivity: ComponentActivity() {
     private lateinit var viewModel: CreatingWorkoutViewModel
@@ -45,7 +43,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(modifier = Modifier.padding(innerPadding))
+                    CompletedExerciseMainScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
@@ -63,7 +61,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(modifier: Modifier, viewModel: CreatingWorkoutViewModel = viewModel()) {
+fun CompletedExerciseMainScreen(modifier: Modifier, viewModel: CreatingWorkoutViewModel = viewModel()) {
     val exercises = viewModel.exercisesList.collectAsState().value
     nameField()
     exercisesList(exercises)

@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.uielements
+package com.example.fittrackerapp.uielements.executingworkout
 
 import android.content.Intent
 import android.os.Build
@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,8 +58,7 @@ import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.viewmodels.ExecutingWorkoutViewModel
-import com.example.fittrackerapp.viewmodels.ExecutingWorkoutViewModelFactory
+import com.example.fittrackerapp.uielements.ResultsActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -75,7 +75,7 @@ class ExecutingWorkoutActivity : ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(
+                    CompletedExerciseMainScreen(
                         modifier = Modifier.padding(innerPadding),
                         workoutName = workoutName,
                         onEndClick = { onEndClick() },
@@ -136,12 +136,12 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-               viewModel: ExecutingWorkoutViewModel = viewModel(),
-               workoutName: String, onEndClick: () -> Unit,
-               setCondition: (WorkoutCondition) -> Unit,
-               formatTime: (Int) -> String,
-               setChangingSet: (Set) -> Unit) {
+fun CompletedExerciseMainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                                viewModel: ExecutingWorkoutViewModel = viewModel(),
+                                workoutName: String, onEndClick: () -> Unit,
+                                setCondition: (WorkoutCondition) -> Unit,
+                                formatTime: (Int) -> String,
+                                setChangingSet: (Set) -> Unit) {
 
     val stringWorkoutTime = viewModel.stringWorkoutTime.collectAsState().value
 
@@ -159,12 +159,9 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val lastCondition = viewModel.lastCondition.collectAsState().value
 
-    val isLastExercise = viewModel.isLastExercise.collectAsState().value
-
     val nextExercise = viewModel.nextExercise.collectAsState().value
 
-    val setList = viewModel.setList.collectAsState()
-    Log.d("UI", "setList = $setList")
+    val setList = viewModel.setList
 
     val changingSet = viewModel.changingSet.collectAsState()
     Column(modifier = modifier) {
@@ -176,10 +173,9 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
         }
 
         Text(stringExerciseTime)
-        if ((workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
+        if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     || lastCondition == WorkoutCondition.REST_AFTER_EXERCISE
-                    && workoutCondition == WorkoutCondition.PAUSE)
-            && !isLastExercise) {
+                    && workoutCondition == WorkoutCondition.PAUSE) {
             ExerciseInformation(nextExercise, stringRestTime, formatTime)
         }
         LastSet(lastCondition, workoutCondition, stringSetTime,
@@ -189,7 +185,7 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsTable(setList: State<List<Set>>, formatTime: (Int) -> String, setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
+fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
     SetsTableHeaders()
     SetsStrings(setList, formatTime, setChangingSet = setChangingSet, changingSet = changingSet)
 }
@@ -213,12 +209,12 @@ fun SetsTableHeaders() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsStrings(setList: State<List<Set>>, formatTime: (Int) -> String, viewModel: ExecutingWorkoutViewModel = viewModel(), setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
+fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, viewModel: ExecutingWorkoutViewModel = viewModel(), setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
 
     var showSheet = viewModel.isChangingSet.collectAsState().value
     val changingSetValue = changingSet.value
 
-    val setListValue = setList.value
+    val setListValue = setList
 
     LazyColumn(
         modifier = Modifier

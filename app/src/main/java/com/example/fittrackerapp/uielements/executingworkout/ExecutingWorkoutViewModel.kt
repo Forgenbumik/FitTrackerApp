@@ -1,7 +1,10 @@
-package com.example.fittrackerapp.viewmodels
+package com.example.fittrackerapp.uielements.executingworkout
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -53,8 +56,8 @@ class ExecutingWorkoutViewModel (
     private val _currentSet: MutableStateFlow<Set> = MutableStateFlow(Set(0, completedExerciseId = 0, duration = 0, reps = 0, weight = 0.0, restDuration = 0, setNumber = 0))
     val currentSet: StateFlow<Set> = _currentSet
 
-    private val _setList = MutableStateFlow<List<Set>>(emptyList())
-    val setList: StateFlow<List<Set>> = _setList
+    private var _setList = mutableStateListOf<Set>()
+    val setList: SnapshotStateList<Set> get() = _setList
 
     private val _workoutCondition = MutableStateFlow(WorkoutCondition.SET)
     val workoutCondition: StateFlow<WorkoutCondition> = _workoutCondition
@@ -83,9 +86,6 @@ class ExecutingWorkoutViewModel (
     val stringRestTime: StateFlow<String> = _stringRestTime
 
     private var isLastWorkoutInserted = false
-
-    private val _isLastExercise = MutableStateFlow(false)
-    val isLastExercise: StateFlow<Boolean> = _isLastExercise
 
     private val _isChangingSet = MutableStateFlow(false)
     val isChangingSet: StateFlow<Boolean> = _isChangingSet
@@ -117,9 +117,6 @@ class ExecutingWorkoutViewModel (
             if (i+1 != details.size) {
                 _nextExercise.value = details[i+1]
             }
-            else {
-                _isLastExercise.value = true
-            }
             runExercise(details[i])
             setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
             runRestAfterExerciseTimer()
@@ -139,15 +136,16 @@ class ExecutingWorkoutViewModel (
          if (isLastWorkoutInserted) return
          viewModelScope.launch {
              lastWorkoutRepository.insertLastWorkout(completedWorkout)
+             Log.d("LastWorkout", "Last workout inserted")
          }
          isLastWorkoutInserted = true
     }
 
     fun updateSet(set: Set, reps: Int, weight: Double) {
-        set.reps = reps
-        set.weight = weight
+        val newSet = set.copy(reps = reps, weight = weight)
+        _setList[set.setNumber - 1] = newSet
         viewModelScope.launch {
-            setsRepository.update(set)
+            setsRepository.update(newSet)
         }
 
     }
@@ -205,14 +203,14 @@ class ExecutingWorkoutViewModel (
                 _currentSet.value = Set(0, currentExerciseId, setSeconds, detail.reps, 0.0, 0, i)
                 val setId = setsRepository.insert(_currentSet.value)
                 _currentSet.value.id = setId
-                _setList.value += _currentSet.value
+                _setList.add(_currentSet.value)
                 runRestTimer(setId, detail.restDuration)
                 restSeconds = 0
                 currentExercise.setsNumber++
                 currentExercise.totalReps += detail.reps
             }
         }
-        _setList.value = emptyList()
+        _setList.clear()
         currentExercise.duration = exerciseSeconds
         completedExerciseRepository.update(currentExercise)
     }
