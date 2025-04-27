@@ -18,7 +18,7 @@ class Workout(
     @PrimaryKey(autoGenerate = true) override val id: Long = 0,
     @ColumnInfo override val name: String,
     @ColumnInfo(name = "is_user_defined") val isUserDefined: Boolean,
-    @ColumnInfo(name = "is_used") val isUsing: Boolean,
+    @ColumnInfo(name = "is_used") override val isUsed: Boolean,
     @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime
 ): BaseWorkout()
 

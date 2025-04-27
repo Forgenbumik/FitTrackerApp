@@ -1,5 +1,7 @@
 package com.example.fittrackerapp.entities
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -17,7 +19,7 @@ import java.time.LocalDateTime
 data class Exercise(
     @PrimaryKey(autoGenerate = true) override val id: Long = 0,
     @ColumnInfo override val name: String,
-    @ColumnInfo(name = "is_used") val isUsed: Boolean,
+    @ColumnInfo(name = "is_used") override var isUsed: Boolean,
     @ColumnInfo(name = "is_user_defined") val isUserDefined: Boolean,
     @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime
 ): BaseWorkout()
@@ -26,7 +28,7 @@ data class Exercise(
 interface ExerciseDao {
 
     @Insert(entity = Exercise::class)
-    suspend fun insert(workout: Exercise)
+    suspend fun insert(exercise: Exercise)
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
     suspend fun getById(exerciseId: Long): Exercise?
@@ -37,13 +39,18 @@ interface ExerciseDao {
     @Update
     suspend fun update(exercise: Exercise)
 
-    @Query("SELECT * FROM exercises")
-    suspend fun getAll(): List<Exercise>
+    @Query("SELECT * FROM exercises where is_used = 1")
+    suspend fun getAllExceptNotUsed(): List<Exercise>
+
+    @Query("SELECT name FROM exercises")
+    suspend fun getAllExerciseNames(): List<String>
 }
 
 class ExerciseRepository(private val dao: ExerciseDao) {
 
-    suspend fun insert(exercise: Exercise) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    suspend fun insert(name: String) {
+        val exercise = Exercise(0, name, true, true, LocalDateTime.now())
         return withContext(Dispatchers.IO) {
             dao.insert(exercise)
         }
@@ -67,9 +74,15 @@ class ExerciseRepository(private val dao: ExerciseDao) {
         }
     }
 
-    suspend fun getAll(): List<Exercise> {
+    suspend fun getAllExceptAdded(): List<Exercise> {
         return withContext(Dispatchers.IO) {
-            dao.getAll()
+            dao.getAllExceptNotUsed()
+        }
+    }
+
+    suspend fun getAllExerciseNames(): List<String> {
+        return withContext(Dispatchers.IO) {
+            dao.getAllExerciseNames()
         }
     }
 }
