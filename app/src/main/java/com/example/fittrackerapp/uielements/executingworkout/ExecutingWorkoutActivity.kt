@@ -57,6 +57,7 @@ import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import com.example.fittrackerapp.service.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.ResultsActivity
 import kotlinx.coroutines.CoroutineScope
@@ -116,6 +117,8 @@ class ExecutingWorkoutActivity : ComponentActivity() {
         }
         startActivity(intent)
         finish()
+        val serviceIntent = Intent(this, WorkoutRecordingService::class.java)
+        stopService(serviceIntent)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -149,9 +152,9 @@ fun CompletedExerciseMainScreen(modifier: Modifier = Modifier.windowInsetsPaddin
 
     val stringExerciseTime = viewModel.stringExerciseTime.collectAsState().value
 
-    val stringSetTime = viewModel.stringSetTime.collectAsState().value
+    val stringSetTime = viewModel.stringSetTime.collectAsState()
 
-    val stringRestTime = viewModel.stringRestTime.collectAsState().value
+    val stringRestTime = viewModel.stringRestTime.collectAsState()
 
     val workoutCondition = viewModel.workoutCondition.collectAsState().value
 
@@ -159,7 +162,7 @@ fun CompletedExerciseMainScreen(modifier: Modifier = Modifier.windowInsetsPaddin
 
     val lastCondition = viewModel.lastCondition.collectAsState().value
 
-    val nextExercise = viewModel.nextExercise.collectAsState().value
+    val nextExercise = viewModel.nextExercise.collectAsState()
 
     val setList = viewModel.setList
 
@@ -388,26 +391,30 @@ fun CenteredListItem(onItemSelected: (Int) -> Unit, listState: LazyListState, co
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ExerciseInformation(nextExercise: WorkoutDetail, stringRestTime: String, formatTime: (Int) -> String) {
+fun ExerciseInformation(nextExercise: State<WorkoutDetail>, stringRestTime: State<String>, formatTime: (Int) -> String) {
+
+    val nextExerciseValue = nextExercise.value
+
+    val stringRestTimeValue = stringRestTime.value
 
     Column {
-        Text("Отдых: ${stringRestTime}$")
+        Text("Отдых: ${stringRestTimeValue}$")
 
-        Text(nextExercise.exerciseName)
-        if (nextExercise.isRestManually) {
-            Text("${nextExercise.setsNumber} подходов, ${ nextExercise.reps } повт., отдых: вручную")
+        Text(nextExerciseValue.exerciseName)
+        if (nextExerciseValue.isRestManually) {
+            Text("${nextExerciseValue.setsNumber} подходов, ${ nextExerciseValue.reps } повт., отдых: вручную")
         }
         else {
-            Text("${nextExercise.setsNumber} подходов, " +
-                    "${ nextExercise.reps } повт., " +
-                    "отдых: ${formatTime(nextExercise.restDuration)}")
+            Text("${nextExerciseValue.setsNumber} подходов, " +
+                    "${ nextExerciseValue.reps } повт., " +
+                    "отдых: ${formatTime(nextExerciseValue.restDuration)}")
         }
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition, stringSetTime: String, stringRestTime: String, setCondition: (WorkoutCondition) -> Unit, onEndClick: () -> Unit) {
+fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition, stringSetTime: State<String>, stringRestTime: State<String>, setCondition: (WorkoutCondition) -> Unit, onEndClick: () -> Unit) {
 
     Box(
         modifier = Modifier
@@ -448,7 +455,10 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun FirstSetButtons(modifier: Modifier, stringSetTime: String, setCondition: (WorkoutCondition) -> Unit) {
+fun FirstSetButtons(modifier: Modifier, stringSetTime: State<String>, setCondition: (WorkoutCondition) -> Unit) {
+
+    val stringSetTimeValue = stringSetTime.value
+
     Row(modifier = modifier) {
         Button(onClick = {
             setCondition(WorkoutCondition.REST)
@@ -460,14 +470,17 @@ fun FirstSetButtons(modifier: Modifier, stringSetTime: String, setCondition: (Wo
         Button(onClick = { }, modifier = Modifier
             .weight(1f)
             .fillMaxHeight()) {
-            Text(stringSetTime)
+            Text(stringSetTimeValue)
         }
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun RestButtons(stringRestTime: String, setCondition: (WorkoutCondition) -> Unit, modifier: Modifier) {
+fun RestButtons(stringRestTime: State<String>, setCondition: (WorkoutCondition) -> Unit, modifier: Modifier) {
+
+    val stringRestTimeValue = stringRestTime.value
+
     Row(modifier = modifier) {
         Button(onClick = {
             setCondition(WorkoutCondition.SET)
@@ -479,7 +492,7 @@ fun RestButtons(stringRestTime: String, setCondition: (WorkoutCondition) -> Unit
         Button(onClick = { }, modifier = Modifier
             .weight(1f)
             .fillMaxHeight()) {
-            Text("Отдых: $stringRestTime")
+            Text("Отдых: $stringRestTimeValue")
         }
     }
 }
