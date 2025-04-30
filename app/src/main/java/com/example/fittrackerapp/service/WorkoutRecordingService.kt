@@ -284,8 +284,6 @@ class WorkoutRecordingService: Service() {
                 WorkoutCondition.PAUSE -> waitForResume()
                 else -> break
             }
-            _exerciseSeconds.value = 0
-            _restSeconds.value = 0
         }
     }
 
