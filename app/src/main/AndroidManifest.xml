@@ -23,13 +23,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".uielements.WorkoutActivity"
+        <activity android:name=".uielements.workout.WorkoutActivity"
             android:theme="@style/Theme.FitTrackerApp"/>
-        <activity android:name=".uielements.CompletedWorkoutActivity" />
-        <activity android:name=".uielements.ExecutingWorkoutActivity" />
-        <activity android:name=".uielements.AllWorkoutsActivity" />
+        <activity android:name=".uielements.completedworkout.CompletedWorkoutActivity" />
+        <activity android:name=".uielements.executingworkout.ExecutingWorkoutActivity" />
+        <activity android:name=".uielements.usedworkouts.UsedWorkoutsActivity" />
         <activity android:name=".uielements.ResultsActivity"/>
-        <activity android:name=".uielements.CreatingWorkoutActivity"/>
+        <activity android:name=".uielements.creatingworkout.CreatingWorkoutActivity"/>
+        <activity android:name=".uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity"/>
+        <activity android:name=".uielements.exercise.ExerciseActivity"/>
+        <activity android:name=".uielements.completedexercise.CompletedExerciseActivity"/>
+        <activity android:name=".uielements.allworkouts.AllExercisesActivity"/>
+
     </application>
 
 </manifest>
