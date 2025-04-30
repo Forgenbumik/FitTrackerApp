@@ -1,6 +1,8 @@
 package com.example.fittrackerapp.uielements.exercise
 
-class ExerciseActivity {
+import androidx.activity.ComponentActivity
+
+class ExerciseActivity: ComponentActivity() {
 
 
 }
