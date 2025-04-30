@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         onFavouriteWorkoutClick = { workout -> onFavouriteWorkoutClick(workout) },
                         onLastWorkoutClick = { workout -> onLastWorkoutClick(workout) },
-                        onAllWorkoutsClick = { onAllWorkoutsClick() }
+                        onAllWorkoutsClick = { onUsedWorkoutsClick() }
                     )
                 }
             }
@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun onAllWorkoutsClick() {
+    fun onUsedWorkoutsClick() {
         val intent = Intent(this, UsedWorkoutsActivity::class.java)
         startActivity(intent)
     }
