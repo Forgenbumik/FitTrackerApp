@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 @Entity(
@@ -41,7 +42,7 @@ interface SetDao {
     suspend fun insert(set: Set): Long
 
     @Query("SELECT * FROM sets WHERE id = :setId")
-    suspend fun getById(setId: Long): Set?
+    fun getById(setId: Long): Flow<Set?>
 
     @Delete
     suspend fun delete(set: Set)
@@ -53,7 +54,7 @@ interface SetDao {
     suspend fun updateRestDuration(id: Long, restDuration: Int)
 
     @Query("SELECT * FROM sets WHERE completed_exercise_id = :completedExerciseId")
-    suspend fun getByCompletedExerciseId(completedExerciseId: Long): List<Set>
+    fun getByCompletedExerciseId(completedExerciseId: Long): Flow<List<Set>>
 }
 
 class SetRepository(private val dao: SetDao) {
@@ -64,10 +65,8 @@ class SetRepository(private val dao: SetDao) {
         }
     }
 
-    suspend fun getById(setId: Long): Set? {
-        return withContext(Dispatchers.IO) {
-            dao.getById(setId)
-        }
+    fun getById(setId: Long): Flow<Set?> {
+        return dao.getById(setId)
     }
 
     suspend fun delete(set: Set) {
@@ -88,10 +87,8 @@ class SetRepository(private val dao: SetDao) {
         }
     }
 
-    suspend fun getByCompletedExerciseId(completedExerciseId: Long): List<Set> {
-        return withContext(Dispatchers.IO) {
-            dao.getByCompletedExerciseId(completedExerciseId)
-        }
+    fun getByCompletedExerciseId(completedExerciseId: Long): Flow<List<Set>> {
+        return dao.getByCompletedExerciseId(completedExerciseId)
 
     }
 }

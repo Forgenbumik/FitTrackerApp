@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
@@ -52,7 +53,7 @@ interface CompletedExerciseDao {
     fun insert(completedExercise: CompletedExercise): Long
 
     @Query("SELECT * FROM completed_exercises WHERE id = :completedExerciseId")
-    suspend fun getById(completedExerciseId: Long): CompletedExercise
+    fun getById(completedExerciseId: Long): Flow<CompletedExercise>
 
     @Delete
     suspend fun delete(completedExercise: CompletedExercise)
@@ -61,10 +62,10 @@ interface CompletedExerciseDao {
     suspend fun update(completedExercise: CompletedExercise)
 
     @Query("SELECT * FROM completed_exercises")
-    suspend fun getAll(): List<CompletedExercise>
+    fun getAll(): Flow<List<CompletedExercise>>
 
     @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = :completedWorkoutId")
-    suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise>
+    fun getByCompletedWorkoutId(completedWorkoutId: Long): Flow<List<CompletedExercise>>
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
     suspend fun getExerciseById(exerciseId: Long): Exercise?
@@ -90,22 +91,16 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
         }
     }
 
-    suspend fun getById(completedExerciseId: Long): CompletedExercise {
-        return withContext(Dispatchers.IO) {
-            dao.getById(completedExerciseId)
-        }
+    fun getById(completedExerciseId: Long): Flow<CompletedExercise> {
+        return dao.getById(completedExerciseId)
     }
 
-    suspend fun getAll(): List<CompletedExercise> {
-        return withContext(Dispatchers.IO) {
-            dao.getAll()
-        }
+    fun getAll(): Flow<List<CompletedExercise>> {
+        return dao.getAll()
     }
 
-    suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise> {
-        return withContext(Dispatchers.IO) {
-            dao.getByCompletedWorkoutId(completedWorkoutId)
-        }
+    fun getByCompletedWorkoutId(completedWorkoutId: Long): Flow<List<CompletedExercise>> {
+        return dao.getByCompletedWorkoutId(completedWorkoutId)
     }
 
     suspend fun getExerciseName(exerciseId: Long): String {

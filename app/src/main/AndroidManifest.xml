@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -13,8 +14,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FitTrackerApp"
         tools:targetApi="31">
+        <service
+            android:name=".service.WorkoutRecordingService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
         <activity
-            android:name=".uielements.MainActivity"
+            android:name=".uielements.main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.FitTrackerApp">
             <intent-filter>
@@ -28,7 +33,7 @@
         <activity android:name=".uielements.completedworkout.CompletedWorkoutActivity" />
         <activity android:name=".uielements.executingworkout.ExecutingWorkoutActivity" />
         <activity android:name=".uielements.usedworkouts.UsedWorkoutsActivity" />
-        <activity android:name=".uielements.ResultsActivity"/>
+        <activity android:name=".uielements.resultsactivity.ResultsActivity"/>
         <activity android:name=".uielements.creatingworkout.CreatingWorkoutActivity"/>
         <activity android:name=".uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity"/>
         <activity android:name=".uielements.exercise.ExerciseActivity"/>

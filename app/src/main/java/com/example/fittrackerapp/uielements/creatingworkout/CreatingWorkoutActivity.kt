@@ -43,7 +43,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CompletedExerciseMainScreen(modifier = Modifier.padding(innerPadding))
+                    MainScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
@@ -60,54 +60,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
     }
 }
 
-@Composable
-fun CompletedExerciseMainScreen(modifier: Modifier, viewModel: CreatingWorkoutViewModel = viewModel()) {
-    val exercises = viewModel.exercisesList.collectAsState().value
-    nameField()
-    exercisesList(exercises)
+fun MainScreen(modifier: Modifier) {
+
 }
 
-@Composable
-fun nameField(viewModel: CreatingWorkoutViewModel = viewModel()) {
-    val workoutName = viewModel.getWorkoutName()
-    TextField(
-        value = workoutName,
-        onValueChange = { name ->
-            viewModel.setWorkoutName(name)
-        },
-        label = { Text(viewModel.getGeneratedName()) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    )
-}
-
-@Composable
-fun exercisesList(exercises: List<Exercise>) {
-    @Composable
-    fun SimpleDropdownMenu() {
-        var expanded by remember { mutableStateOf(false) }
-        val options = listOf("Option 1", "Option 2", "Option 3")
-
-        Box {
-            Button(onClick = { expanded = true }) {
-                Text("Show Menu")
-            }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            println("Selected: $option")
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-    }
-}

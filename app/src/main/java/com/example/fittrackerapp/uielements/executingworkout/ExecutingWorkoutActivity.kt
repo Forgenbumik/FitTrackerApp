@@ -1,5 +1,7 @@
 package com.example.fittrackerapp.uielements.executingworkout
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -50,16 +52,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
-import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.service.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.uielements.ResultsActivity
+import com.example.fittrackerapp.uielements.resultsactivity.ResultsActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -67,6 +66,40 @@ class ExecutingWorkoutActivity : ComponentActivity() {
     private lateinit var viewModel: ExecutingWorkoutViewModel
 
     private var workoutName = ""
+
+    val receiver = object : BroadcastReceiver() {
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val stringWorkoutTime = intent?.getIntExtra("stringWorkoutTime", 0)
+            if (stringWorkoutTime != null) {
+                viewModel.updateWorkoutTime(stringWorkoutTime)
+            }
+            val stringExerciseTime = intent?.getIntExtra("stringExerciseTime", 0)
+            if (stringExerciseTime != null) {
+                viewModel.updateExerciseTime(stringExerciseTime)
+            }
+            val stringSetTime = intent?.getIntExtra("stringSetTime", 0)
+            if (stringSetTime != null) {
+                viewModel.updateSetTime(stringSetTime)
+            }
+            val stringRestTime = intent?.getIntExtra("stringRestTime", 0)
+            if (stringRestTime != null) {
+                viewModel.updateRestTime(stringRestTime)
+            }
+            val workoutCondition = intent?.getSerializableExtra("workoutCondition")
+            if (workoutCondition != null) {
+                viewModel.setCondition(workoutCondition as WorkoutCondition)
+            }
+            val currentExerciseId = intent?.getLongExtra("currentExerciseId", -1)
+            if (currentExerciseId != null) {
+                viewModel.setCurrentExerciseId(currentExerciseId)
+            }
+            val nextExerciseId = intent?.getLongExtra("nextExerciseId", -1)
+            if (nextExerciseId != null) {
+                viewModel.setNextExerciseById(nextExerciseId)
+            }
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,7 +109,7 @@ class ExecutingWorkoutActivity : ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CompletedExerciseMainScreen(
+                    MainScreen(
                         modifier = Modifier.padding(innerPadding),
                         workoutName = workoutName,
                         onEndClick = { onEndClick() },
@@ -96,29 +129,29 @@ class ExecutingWorkoutActivity : ComponentActivity() {
             Log.e("WorkoutViewModel", "Ошибка: workoutId не передан в Intent!")
         }
 
-        val setsRepository = SetRepository(app.appDatabase.setDao())
-        val workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
-        val completedWorkoutRepository = CompletedWorkoutRepository(app.appDatabase.completedWorkoutDao())
-        val completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
-        val lastWorkoutRepository = LastWorkoutRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
+        val intent = Intent(this, WorkoutRecordingService::class.java)
+        intent.putExtra("workoutId", workoutId)
+        intent.putExtra("detailId", detailId)
+        startForegroundService(intent)
 
-        val factory = ExecutingWorkoutViewModelFactory(workoutId, detailId, workoutDetailRepository,
-            setsRepository, completedWorkoutRepository,
-            completedExerciseRepository, lastWorkoutRepository)
+        val setRepository = SetRepository(app.appDatabase.setDao())
+        val workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
+
+        val factory = ExecutingWorkoutViewModelFactory(workoutDetailRepository, setRepository)
 
         viewModel = ViewModelProvider(this, factory).get(ExecutingWorkoutViewModel::class.java)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun onEndClick() {
-
+        val serviceIntent = Intent(this, WorkoutRecordingService::class.java)
+        stopService(serviceIntent)
         val intent = Intent(this, ResultsActivity::class.java).apply {
             putExtra("completedWorkoutId", viewModel.completedWorkoutId)
         }
         startActivity(intent)
         finish()
-        val serviceIntent = Intent(this, WorkoutRecordingService::class.java)
-        stopService(serviceIntent)
+
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -139,12 +172,12 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CompletedExerciseMainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-                                viewModel: ExecutingWorkoutViewModel = viewModel(),
-                                workoutName: String, onEndClick: () -> Unit,
-                                setCondition: (WorkoutCondition) -> Unit,
-                                formatTime: (Int) -> String,
-                                setChangingSet: (Set) -> Unit) {
+fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+               viewModel: ExecutingWorkoutViewModel = viewModel(),
+               workoutName: String, onEndClick: () -> Unit,
+               setCondition: (WorkoutCondition) -> Unit,
+               formatTime: (Int) -> String,
+               setChangingSet: (Set) -> Unit) {
 
     val stringWorkoutTime = viewModel.stringWorkoutTime.collectAsState().value
 
@@ -449,8 +482,6 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
             }
         }
     }
-
-
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

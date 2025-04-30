@@ -33,7 +33,7 @@ import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercis
 import com.example.fittrackerapp.entities.FavouriteWorkout
 import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
+import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 
 class UsedWorkoutsActivity: ComponentActivity() {
     private lateinit var viewModel: UsedWorkoutsViewModel
@@ -63,7 +63,7 @@ class UsedWorkoutsActivity: ComponentActivity() {
     }
 
     fun onPlusClick() {
-        val intent = Intent(this, CreatingWorkoutActivity::class.java)
+        val intent = Intent(this, AddingToUsedWorkoutsActivity::class.java)
         startActivity(intent)
     }
 
