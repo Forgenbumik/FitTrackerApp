@@ -14,7 +14,7 @@
         android:theme="@style/Theme.FitTrackerApp"
         tools:targetApi="31">
         <activity
-            android:name=".uielements.MainActivity"
+            android:name=".uielements.main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.FitTrackerApp">
             <intent-filter>

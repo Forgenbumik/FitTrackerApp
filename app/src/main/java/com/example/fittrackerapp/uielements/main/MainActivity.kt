@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
         when (workout.typeId) {
             1 -> {
                 val intent = Intent(this, CompletedWorkoutActivity::class.java).apply {
-                    putExtra("workoutId", workout.completedWorkoutId)
+                    putExtra("completedWorkoutId", workout.completedWorkoutId)
                 }
                 startActivity(intent)
             }

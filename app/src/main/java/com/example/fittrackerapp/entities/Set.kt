@@ -30,7 +30,7 @@ data class Set(
     @ColumnInfo(name = "duration") var duration: Int,
     @ColumnInfo(name = "reps") var reps: Int,
     @ColumnInfo(name = "weight") var weight: Double,
-    @ColumnInfo(name = "rest_duration") val restDuration: Int,
+    @ColumnInfo(name = "rest_duration") var restDuration: Int,
     @ColumnInfo(name = "set_number") var setNumber: Int
 )
 
