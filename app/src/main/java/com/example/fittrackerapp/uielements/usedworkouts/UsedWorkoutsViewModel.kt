@@ -24,13 +24,15 @@ class UsedWorkoutsViewModel(
     val workoutsList: StateFlow<List<BaseWorkout>> = _workoutsList
 
     init {
-        loadWorkouts()
-    }
-
-    fun loadWorkouts() {
         viewModelScope.launch {
-            _workoutsList.value = workoutsRepository.getAllExceptFavourites().sortedByDescending { bw -> bw.lastUsedDate }
-            _favouriteWorkouts.value = favouriteWorkoutRepository.getAll()
+            favouriteWorkoutRepository.getAllFlow().collect {
+                _favouriteWorkouts.value = it
+            }
+        }
+        viewModelScope.launch {
+            workoutsAndExercisesRepository.getUsedExceptFavourites().collect {
+                _workoutsList.value = it.sortedByDescending { bw -> bw.lastUsedDate }
+            }
         }
     }
 
@@ -40,8 +42,6 @@ class UsedWorkoutsViewModel(
         }
         viewModelScope.launch {
             favouriteWorkoutRepository.insert(workout, position)
-            _favouriteWorkouts.value = favouriteWorkoutRepository.getAll()
-            _workoutsList.value = workoutsRepository.getAllExceptFavourites().sortedByDescending { bw -> bw.lastUsedDate }
         }
         return true
     }
@@ -49,8 +49,6 @@ class UsedWorkoutsViewModel(
     fun deleteFavouriteWorkout(workout: FavouriteWorkout) {
         viewModelScope.launch {
             favouriteWorkoutRepository.delete(workout)
-            _favouriteWorkouts.value = favouriteWorkoutRepository.getAll()
-            _workoutsList.value = workoutsRepository.getAllExceptFavourites().sortedByDescending { bw -> bw.lastUsedDate }
         }
     }
 
@@ -66,7 +64,7 @@ class UsedWorkoutsViewModel(
     }
 }
 
-class UsedWorkoutsModelFactory(
+class UsedWorkoutsViewModelFactory(
     private val favouriteWorkoutRepository: FavouriteWorkoutRepository,
     private val workoutsRepository: WorkoutsAndExercisesRepository
 ) : ViewModelProvider.Factory {

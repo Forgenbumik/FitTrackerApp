@@ -24,8 +24,10 @@ class AddingToUsedWorkoutsViewModel(
 
     init {
         viewModelScope.launch {
-            _exerciseNames = exerciseRepository.getAllExerciseNames()
-            generateName()
+            exerciseRepository.getAllExerciseNamesFlow().collect {
+                _exerciseNames = it
+                generateName()
+            }
         }
     }
 

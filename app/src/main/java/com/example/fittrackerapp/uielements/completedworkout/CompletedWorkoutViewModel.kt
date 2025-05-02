@@ -22,15 +22,21 @@ class CompletedWorkoutViewModel(
 
     init {
         viewModelScope.launch {
-            completedExerciseRepository.getByCompletedWorkoutId(completedWorkoutId)
-                .collect { exercises ->
-                    _completedExercises.value = exercises
-                }
+            completedExerciseRepository.getByCompletedWorkoutIdFlow(completedWorkoutId).collect {
+                _completedExercises.value = it
+            }
         }
     }
 
     suspend fun getExerciseName(exerciseId: Long): String {
         return completedExerciseRepository.getExerciseName(exerciseId)
+    }
+
+    fun formatTime(secs: Int): String {
+        val seconds = secs % 60
+        val minutes = secs / 60 % 60
+        val hours = secs / 3600
+        return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 }
 

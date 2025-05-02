@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 @Entity(tableName = "favourite_workouts",
@@ -45,6 +46,9 @@ interface FavouriteWorkoutDao {
     suspend fun insert(favouriteWorkout: FavouriteWorkout)
 
     @Query("SELECT * FROM favourite_workouts")
+    fun getAllFlow(): Flow<List<FavouriteWorkout>>
+
+    @Query("SELECT * FROM favourite_workouts")
     suspend fun getAll(): List<FavouriteWorkout>
 
     @Delete
@@ -76,6 +80,10 @@ class FavouriteWorkoutRepository(private val dao: FavouriteWorkoutDao) {
                 dao.insert(workout)
             }
         }
+    }
+
+    fun getAllFlow(): Flow<List<FavouriteWorkout>> {
+        return dao.getAllFlow()
     }
 
     suspend fun getAll(): List<FavouriteWorkout> {

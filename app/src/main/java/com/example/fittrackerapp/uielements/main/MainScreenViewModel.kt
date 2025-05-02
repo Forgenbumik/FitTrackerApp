@@ -29,7 +29,9 @@ class MainScreenViewModel(
 
     fun loadFavourites() {
         viewModelScope.launch {
-            _favouriteWorkouts.value = favouriteWorkoutRepository.getAll()
+            favouriteWorkoutRepository.getAllFlow().collect {
+                _favouriteWorkouts.value = it
+            }
         }
     }
 

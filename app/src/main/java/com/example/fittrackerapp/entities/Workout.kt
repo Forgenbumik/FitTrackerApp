@@ -10,6 +10,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
@@ -38,7 +39,10 @@ interface WorkoutDao {
     suspend fun update(workout: Workout)
 
     @Query("SELECT * FROM workouts")
-    suspend fun getAll(): List<Workout>
+    fun getAllFlow(): Flow<List<Workout>>
+
+    @Query("SELECT name FROM workouts")
+    suspend fun getWorkoutsNames(): List<String>
 }
 
 class WorkoutRepository(private val dao: WorkoutDao) {
@@ -48,15 +52,19 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         }
     }
 
-    suspend fun getAll(): List<Workout> {
-        return withContext(Dispatchers.IO) {
-            dao.getAll()
-        }
+    fun getAllFlow(): Flow<List<Workout>> {
+        return dao.getAllFlow()
     }
 
     suspend fun getById(id: Long): Workout? {
         return withContext(Dispatchers.IO) {
             dao.getById(id)
+        }
+    }
+
+    suspend fun getWorkoutsNames(): List<String> {
+        return withContext(Dispatchers.IO) {
+            dao.getWorkoutsNames()
         }
     }
 }

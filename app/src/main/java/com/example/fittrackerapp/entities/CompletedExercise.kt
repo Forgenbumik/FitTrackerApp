@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
@@ -64,6 +65,9 @@ interface CompletedExerciseDao {
     suspend fun getAll(): List<CompletedExercise>
 
     @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = :completedWorkoutId")
+    fun getByCompletedWorkoutIdFlow(completedWorkoutId: Long): Flow<List<CompletedExercise>>
+
+    @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = :completedWorkoutId")
     suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise>
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
@@ -100,6 +104,10 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
         return withContext(Dispatchers.IO) {
             dao.getAll()
         }
+    }
+
+    fun getByCompletedWorkoutIdFlow(completedWorkoutId: Long): Flow<List<CompletedExercise>> {
+        return dao.getByCompletedWorkoutIdFlow(completedWorkoutId)
     }
 
     suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise> {

@@ -12,6 +12,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
@@ -31,6 +32,9 @@ interface ExerciseDao {
     suspend fun insert(exercise: Exercise)
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
+    fun getByIdFlow(exerciseId: Long): Flow<Exercise?>
+
+    @Query("SELECT * FROM exercises WHERE id = :exerciseId")
     suspend fun getById(exerciseId: Long): Exercise?
 
     @Delete
@@ -40,10 +44,16 @@ interface ExerciseDao {
     suspend fun update(exercise: Exercise)
 
     @Query("SELECT * FROM exercises where is_used = 1")
-    suspend fun getAllExceptNotUsed(): List<Exercise>
+    fun getAllExceptNotUsedFlow(): Flow<List<Exercise>>
+
+    @Query("SELECT * FROM exercises where is_used = 1")
+    fun getAllExceptNotUsed(): List<Exercise>
 
     @Query("SELECT name FROM exercises")
-    suspend fun getAllExerciseNames(): List<String>
+    fun getAllExerciseNamesFlow(): Flow<List<String>>
+
+    @Query("SELECT name FROM exercises")
+    fun getAllExerciseNames(): List<String>
 }
 
 class ExerciseRepository(private val dao: ExerciseDao) {
@@ -56,10 +66,8 @@ class ExerciseRepository(private val dao: ExerciseDao) {
         }
     }
 
-    suspend fun getById(exerciseId: Long): Exercise? {
-        return withContext(Dispatchers.IO) {
-            dao.getById(exerciseId)
-        }
+    fun getById(exerciseId: Long): Flow<Exercise?> {
+        return dao.getByIdFlow(exerciseId)
     }
 
     suspend fun delete(exercise: Exercise) {
@@ -74,10 +82,12 @@ class ExerciseRepository(private val dao: ExerciseDao) {
         }
     }
 
-    suspend fun getAllExceptAdded(): List<Exercise> {
-        return withContext(Dispatchers.IO) {
-            dao.getAllExceptNotUsed()
-        }
+    fun getAllExceptNotUsed(): Flow<List<Exercise>> {
+        return dao.getAllExceptNotUsedFlow()
+    }
+
+    fun getAllExerciseNamesFlow(): Flow<List<String>> {
+        return dao.getAllExerciseNamesFlow()
     }
 
     suspend fun getAllExerciseNames(): List<String> {

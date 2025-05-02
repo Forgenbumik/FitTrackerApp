@@ -45,11 +45,11 @@ class CreatingWorkoutViewModel(
     }
 
     suspend fun generateName() {
-        generatedName = "Сценарий ${workoutRepository.getAll().size + 1}"
+        generatedName = "Сценарий ${workoutRepository.getWorkoutsNames().size + 1}"
     }
 
     suspend fun getExercises() {
-        exerciseRepository.getAllExceptAdded()
+        exerciseRepository.getAllExceptNotUsed()
     }
 }
 
