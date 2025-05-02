@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class UsedWorkoutsViewModel(
     private val favouriteWorkoutRepository: FavouriteWorkoutRepository,
-    private val workoutsRepository: WorkoutsAndExercisesRepository
+    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository
 ): ViewModel() {
 
     private val _favouriteWorkouts = MutableStateFlow<List<FavouriteWorkout>>(emptyList())
