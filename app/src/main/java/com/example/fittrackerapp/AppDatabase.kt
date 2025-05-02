@@ -13,7 +13,6 @@ import com.example.fittrackerapp.entities.*
         CompletedWorkout::class,
         CompletedExercise::class,
         LastWorkout::class,
-        FavouriteWorkout::class,
         com.example.fittrackerapp.entities.Set::class,
         Type::class
     ], version = 1
@@ -27,5 +26,4 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun completedExerciseDao(): CompletedExerciseDao
     abstract fun completedWorkoutDao(): CompletedWorkoutDao
     abstract fun lastWorkoutDao(): LastWorkoutDao
-    abstract fun favouriteWorkoutDao(): FavouriteWorkoutDao
 }

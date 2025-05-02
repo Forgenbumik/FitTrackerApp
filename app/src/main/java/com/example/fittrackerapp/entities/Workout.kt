@@ -20,7 +20,8 @@ class Workout(
     @ColumnInfo override val name: String,
     @ColumnInfo(name = "is_user_defined") val isUserDefined: Boolean,
     @ColumnInfo(name = "is_used") override val isUsed: Boolean,
-    @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime
+    @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime,
+    @ColumnInfo(name = "is_favourite") override var isFavourite: Boolean = false
 ): BaseWorkout()
 
 @Dao
@@ -43,6 +44,12 @@ interface WorkoutDao {
 
     @Query("SELECT name FROM workouts")
     suspend fun getWorkoutsNames(): List<String>
+
+    @Query("SELECT * FROM workouts WHERE is_favourite = 1 AND is_used = 1")
+    fun getFavouritesFlow(): Flow<List<Workout>>
+
+    @Query("SELECT * FROM workouts WHERE is_favourite = 0 AND is_used = 1")
+    fun getUsedExceptFavouritesFlow(): Flow<List<Workout>>
 }
 
 class WorkoutRepository(private val dao: WorkoutDao) {
@@ -66,5 +73,25 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         return withContext(Dispatchers.IO) {
             dao.getWorkoutsNames()
         }
+    }
+
+    suspend fun delete(workout: Workout) {
+        withContext(Dispatchers.IO) {
+            dao.delete(workout)
+        }
+    }
+
+    suspend fun update(workout: Workout) {
+        withContext(Dispatchers.IO) {
+            dao.update(workout)
+        }
+    }
+
+    fun getFavouritesFlow(): Flow<List<Workout>> {
+        return dao.getFavouritesFlow()
+    }
+
+    fun getAllExceptFavouritesFlow(): Flow<List<Workout>> {
+        return dao.getUsedExceptFavouritesFlow()
     }
 }

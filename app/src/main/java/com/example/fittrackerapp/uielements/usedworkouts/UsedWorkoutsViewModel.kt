@@ -5,73 +5,65 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.FavouriteWorkout
-import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
-import com.example.fittrackerapp.entities.Workout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class UsedWorkoutsViewModel(
-    private val favouriteWorkoutRepository: FavouriteWorkoutRepository,
     private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository
 ): ViewModel() {
 
-    private val _favouriteWorkouts = MutableStateFlow<List<FavouriteWorkout>>(emptyList())
-    val favouriteWorkouts: StateFlow<List<FavouriteWorkout>> = _favouriteWorkouts
+    private val _favouriteWorkouts = MutableStateFlow<List<BaseWorkout>>(emptyList())
+    val favouriteWorkouts: StateFlow<List<BaseWorkout>> = _favouriteWorkouts
 
     private val _workoutsList = MutableStateFlow<List<BaseWorkout>>(emptyList())
     val workoutsList: StateFlow<List<BaseWorkout>> = _workoutsList
 
     init {
         viewModelScope.launch {
-            favouriteWorkoutRepository.getAllFlow().collect {
+            workoutsAndExercisesRepository.getFavouritesFlow().collect {
                 _favouriteWorkouts.value = it
             }
         }
         viewModelScope.launch {
-            workoutsAndExercisesRepository.getUsedExceptFavourites().collect {
+            workoutsAndExercisesRepository.getUsedExceptFavouritesFlow().collect {
                 _workoutsList.value = it.sortedByDescending { bw -> bw.lastUsedDate }
             }
         }
     }
 
-    fun addFavouriteWorkout(workout: BaseWorkout, position: Int): Boolean {
+    fun addFavouriteWorkout(workout: BaseWorkout): Boolean {
         if (_favouriteWorkouts.value.size >= 10 || !isUnique(workout)) {
+            workout.isFavourite = true
             return false
         }
         viewModelScope.launch {
-            favouriteWorkoutRepository.insert(workout, position)
+            workoutsAndExercisesRepository.addFavourite(workout)
         }
         return true
     }
 
-    fun deleteFavouriteWorkout(workout: FavouriteWorkout) {
+    fun deleteFavouriteWorkout(workout: BaseWorkout) {
+        workout.isFavourite = false
         viewModelScope.launch {
-            favouriteWorkoutRepository.delete(workout)
+            workoutsAndExercisesRepository.deleteFavourite(workout)
         }
     }
 
     fun isUnique(workout: BaseWorkout): Boolean {
         return _favouriteWorkouts.value.none {
-            var workoutTypeId = 0
-            if (workout is Workout) {
-                workoutTypeId = 1
-            }
-            else workoutTypeId = 2
-            it.workoutId == workout.id
-                    && it.typeId == workoutTypeId }
+            it.id == workout.id
+                    && it.javaClass.simpleName == workout.javaClass.simpleName }
     }
 }
 
 class UsedWorkoutsViewModelFactory(
-    private val favouriteWorkoutRepository: FavouriteWorkoutRepository,
     private val workoutsRepository: WorkoutsAndExercisesRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UsedWorkoutsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return UsedWorkoutsViewModel(favouriteWorkoutRepository, workoutsRepository) as T
+            return UsedWorkoutsViewModel(workoutsRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -30,8 +30,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.FavouriteWorkout
-import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
+import com.example.fittrackerapp.entities.Exercise
+import com.example.fittrackerapp.entities.Workout
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 
@@ -45,7 +45,7 @@ class UsedWorkoutsActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CompletedExerciseMainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
+                    MainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
                         ::addWorkoutToFavourites, ::deleteWorkoutFromFavourites)
                 }
             }
@@ -53,11 +53,9 @@ class UsedWorkoutsActivity: ComponentActivity() {
 
         val app = application as App
 
-        val favouriteWorkoutRepository = FavouriteWorkoutRepository(app.appDatabase.favouriteWorkoutDao())
+        val workoutRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
 
-        val workoutRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao(), app.appDatabase.favouriteWorkoutDao())
-
-        val factory = UsedWorkoutsViewModelFactory(favouriteWorkoutRepository, workoutRepository)
+        val factory = UsedWorkoutsViewModelFactory(workoutRepository)
 
         viewModel = ViewModelProvider(this, factory).get(UsedWorkoutsViewModel::class.java)
     }
@@ -68,20 +66,20 @@ class UsedWorkoutsActivity: ComponentActivity() {
     }
 
     fun addWorkoutToFavourites(workout: BaseWorkout) {
-        if (!viewModel.addFavouriteWorkout(workout, 1)) {
+        if (!viewModel.addFavouriteWorkout(workout)) {
             Toast.makeText(this, "Превышено допустимое количество избранных тренировок", Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun deleteWorkoutFromFavourites(workout: FavouriteWorkout) {
+    fun deleteWorkoutFromFavourites(workout: BaseWorkout) {
         viewModel.deleteFavouriteWorkout(workout)
     }
 }
 
 @Composable
-fun CompletedExerciseMainScreen(viewModel: UsedWorkoutsViewModel, modifier: Modifier = Modifier,
+fun MainScreen(viewModel: UsedWorkoutsViewModel, modifier: Modifier = Modifier,
                                 onPlusClick: () -> Unit, AddFavouriteClick: (BaseWorkout) -> Unit,
-                                DeleteFavouriteClick: (FavouriteWorkout) -> Unit) {
+                                DeleteFavouriteClick: (BaseWorkout) -> Unit) {
     UpperBar(onPlusClick)
     val favouriteWorkouts = viewModel.favouriteWorkouts.collectAsState().value
     val workouts = viewModel.workoutsList.collectAsState().value
@@ -105,14 +103,14 @@ fun UpperBar(onPlusClick: () -> Unit) {
 }
 
 @Composable
-fun FavouriteWorkoutsList(favouriteWorkouts: List<FavouriteWorkout>, DeleteFavouriteClick: (FavouriteWorkout) -> Unit) {
+fun FavouriteWorkoutsList(favouriteWorkouts: List<BaseWorkout>, DeleteFavouriteClick: (BaseWorkout) -> Unit) {
     Text("Избранные сценарии")
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
         items(favouriteWorkouts) { workout ->
             Row {
-                Text(workout.workoutName)
+                Text(workout.name)
                 IconButton(onClick = { DeleteFavouriteClick(workout) }) {
                     Icon(
                         imageVector = Icons.Default.Delete, // Использует стандартную иконку добавления

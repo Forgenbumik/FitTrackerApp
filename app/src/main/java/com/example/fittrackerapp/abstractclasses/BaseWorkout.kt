@@ -7,4 +7,5 @@ abstract class BaseWorkout {
     abstract val name: String
     abstract val isUsed: Boolean
     abstract val lastUsedDate: LocalDateTime
+    abstract var isFavourite: Boolean
 }

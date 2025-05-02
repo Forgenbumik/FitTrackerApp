@@ -20,7 +20,7 @@ class AllExercisesViewModel(
 
     init {
         viewModelScope.launch {
-            exerciseRepository.getAllExceptNotUsed().collect {
+            exerciseRepository.getUsed().collect {
                 _exercisesList.value = it
             }
         }

@@ -49,7 +49,7 @@ class CreatingWorkoutViewModel(
     }
 
     suspend fun getExercises() {
-        exerciseRepository.getAllExceptNotUsed()
+        exerciseRepository.getUsed()
     }
 }
 
