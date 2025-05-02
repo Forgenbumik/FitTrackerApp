@@ -241,7 +241,7 @@ fun SetsTableHeaders() {
 @Composable
 fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, viewModel: ExecutingWorkoutViewModel = viewModel(), setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
 
-    var showSheet = viewModel.isChangingSet.collectAsState().value
+    val showSheet = viewModel.isChangingSet.collectAsState().value
     val changingSetValue = changingSet.value
 
     val setListValue = setList
@@ -384,7 +384,7 @@ fun CenteredPicker(
                 val center = listState.firstVisibleItemIndex
                 val isSelected = item == center
 
-                CenteredListItem(onItemSelected, listState, coroutineScope, item, center, isSelected, itemHeight)
+                CenteredListItem(onItemSelected, item, isSelected, itemHeight)
             }
         }
 
@@ -400,7 +400,7 @@ fun CenteredPicker(
 }
 
 @Composable
-fun CenteredListItem(onItemSelected: (Int) -> Unit, listState: LazyListState, coroutineScope: CoroutineScope, item: Int, centerIndex: Int, isSelected: Boolean, itemHeight: Dp, ) {
+fun CenteredListItem(onItemSelected: (Int) -> Unit, item: Int, isSelected: Boolean, itemHeight: Dp) {
     Text(
         text = "$item",
         fontSize = if (isSelected) 24.sp else 16.sp,
