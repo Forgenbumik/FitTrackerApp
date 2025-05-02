@@ -59,7 +59,8 @@ import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.service.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.uielements.ResultsActivity
+import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
+import com.example.fittrackerapp.uielements.main.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 

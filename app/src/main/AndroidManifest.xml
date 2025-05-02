@@ -28,7 +28,6 @@
         <activity android:name=".uielements.completedworkout.CompletedWorkoutActivity" />
         <activity android:name=".uielements.executingworkout.ExecutingWorkoutActivity" />
         <activity android:name=".uielements.usedworkouts.UsedWorkoutsActivity" />
-        <activity android:name=".uielements.ResultsActivity"/>
         <activity android:name=".uielements.creatingworkout.CreatingWorkoutActivity"/>
         <activity android:name=".uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity"/>
         <activity android:name=".uielements.exercise.ExerciseActivity"/>
