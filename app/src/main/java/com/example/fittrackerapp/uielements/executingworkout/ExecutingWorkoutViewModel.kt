@@ -41,6 +41,9 @@ class ExecutingWorkoutViewModel (
 
     var completedWorkoutId = 0L
 
+    val _isSaveCompleted = MutableStateFlow(false)
+    val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
+
     private var exerciseJob: Job? = null
 
     private lateinit var currentExercise: CompletedExercise
@@ -84,8 +87,6 @@ class ExecutingWorkoutViewModel (
 
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
-
-    private var isLastWorkoutInserted = false
 
     private val _isChangingSet = MutableStateFlow(false)
     val isChangingSet: StateFlow<Boolean> = _isChangingSet
@@ -133,12 +134,13 @@ class ExecutingWorkoutViewModel (
     }
 
      fun insertLastWorkout() {
-         if (isLastWorkoutInserted) return
+         if (_isSaveCompleted.value) return
          viewModelScope.launch {
              lastWorkoutRepository.insertLastWorkout(completedWorkout)
              Log.d("LastWorkout", "Last workout inserted")
+             _isSaveCompleted.value = true
          }
-         isLastWorkoutInserted = true
+
     }
 
     fun updateSet(set: Set, reps: Int, weight: Double) {
@@ -197,7 +199,6 @@ class ExecutingWorkoutViewModel (
         for (i in 1..detail.setsNumber) {
             if (workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && workoutCondition.value != WorkoutCondition.END) {
-
 
                 runSetTimer()
                 _currentSet.value = Set(0, currentExerciseId, setSeconds, detail.reps, 0.0, 0, i)
@@ -330,7 +331,7 @@ class ExecutingWorkoutViewModel (
     }
 
     fun setChangingSet(set: Set?) {
-        _changingSet.value = set;
+        _changingSet.value = set
     }
 }
 

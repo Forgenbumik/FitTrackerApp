@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
@@ -57,17 +58,19 @@ import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
-import com.example.fittrackerapp.service.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ExecutingWorkoutActivity : ComponentActivity() {
     private lateinit var viewModel: ExecutingWorkoutViewModel
 
     private var workoutName = ""
+
+    private var isSaving = false
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,15 +114,38 @@ class ExecutingWorkoutActivity : ComponentActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    override fun onBackPressed() {
+
+        viewModel.setCondition(WorkoutCondition.END)
+
+        val intent = Intent(this, MainActivity::class.java)
+
+        lifecycleScope.launch {
+            viewModel.isSaveCompleted
+                .filter { it } // пропускаем, пока не станет true
+                .first()       // ждём первое значение true
+            startActivity(intent)
+            finish()
+        }
+        super.onBackPressed()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     fun onEndClick() {
 
-        val intent = Intent(this, ResultsActivity::class.java).apply {
+        val intent = Intent(this, CompletedWorkoutActivity::class.java).apply {
             putExtra("completedWorkoutId", viewModel.completedWorkoutId)
         }
-        startActivity(intent)
-        finish()
-        val serviceIntent = Intent(this, WorkoutRecordingService::class.java)
-        stopService(serviceIntent)
+
+        lifecycleScope.launch {
+            viewModel.isSaveCompleted
+                .filter { it } // пропускаем, пока не станет true
+                .first()       // ждём первое значение true
+            startActivity(intent)
+            finish()
+        }
+
+
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -546,7 +572,10 @@ fun PauseButtons(lastCondition: WorkoutCondition,
             Text("Продолжить")
         }
         Button(
-            onClick = onEndClick,
+            onClick = {
+                setCondition(WorkoutCondition.END)
+                onEndClick()
+            },
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
