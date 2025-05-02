@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -28,28 +29,46 @@ class CompletedExerciseViewModel(
     @RequiresApi(Build.VERSION_CODES.O)
     val completedExercise: StateFlow<CompletedExercise> = _completedExercise
 
+    private val _isChangingSet = MutableStateFlow(false)
+    val isChangingSet: StateFlow<Boolean> = _isChangingSet
+
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
 
-    private val _changingSet: MutableStateFlow<Set> = MutableStateFlow(Set(0,0,0,0,0.0,0,0))
-    val changingSet: StateFlow<Set> = _changingSet
+    private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(Set(0,0,0,0,0.0,0,0))
+    val changingSet: StateFlow<Set?> = _changingSet
 
     init {
         viewModelScope.launch {
-            completedExerciseRepository.getById(completedExerciseId)
-                .collect { newCompletedExercise ->
-                    _completedExercise.value = newCompletedExercise
-                }
-            setRepository.getByCompletedExerciseId(completedExerciseId)
-                .collect { newSets ->
-                    _setList.clear()
-                    _setList.addAll(newSets)
-                }
+            loadCompletedExercise()
+        }
+        viewModelScope.launch {
+            loadSets()
         }
     }
 
-    fun setChangingSet(set: Set) {
+    suspend fun loadCompletedExercise() {
+        _completedExercise.value = completedExerciseRepository.getById(completedExerciseId)
+    }
+
+    suspend fun loadSets() {
+        _setList = setRepository.getByCompletedExerciseId(completedExerciseId).toMutableStateList()
+    }
+
+    fun setIsChangingSet(isChangingSet: Boolean) {
+        _isChangingSet.value = isChangingSet
+    }
+
+    fun setChangingSet(set: Set?) {
         _changingSet.value = set
+    }
+
+    fun updateSet(set: Set, reps: Int, weight: Double) {
+        val newSet = set.copy(reps = reps, weight = weight)
+        _setList[set.setNumber - 1] = newSet
+        viewModelScope.launch {
+            setRepository.update(newSet)
+        }
     }
 
     fun formatTime(secs: Int): String {
