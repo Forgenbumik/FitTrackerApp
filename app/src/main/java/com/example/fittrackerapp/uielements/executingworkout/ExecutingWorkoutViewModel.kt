@@ -75,6 +75,8 @@ class ExecutingWorkoutViewModel (
 
     private var exerciseSeconds = 0
 
+    private var exerciseRestSeconds = 0
+
     private val _stringExerciseTime = MutableStateFlow("00:00")
     val stringExerciseTime: StateFlow<String> = _stringExerciseTime
 
@@ -115,15 +117,23 @@ class ExecutingWorkoutViewModel (
         details.remove(firstExercise)
         details.add(0, firstExercise)
         for (i in 0..(details.size-1)) {
-            if (i+1 != details.size) {
-                _nextExercise.value = details[i+1]
+            if (_workoutCondition.value != WorkoutCondition.END) {
+                if (i+1 != details.size) {
+                    _nextExercise.value = details[i+1]
+                }
+                runExercise(details[i])
+                currentExercise.duration = exerciseSeconds
+                exerciseSeconds = 0
+                if (_workoutCondition.value != WorkoutCondition.END) {
+                    setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
+                }
+                runRestAfterExerciseTimer()
+
+                currentExercise.restDuration = exerciseRestSeconds
+                exerciseRestSeconds = 0
+                completedExerciseRepository.update(currentExercise)
+                completedWorkout.exercisesNumber++
             }
-            runExercise(details[i])
-            setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-            runRestAfterExerciseTimer()
-            currentExercise.restDuration = restSeconds
-            completedExerciseRepository.update(currentExercise)
-            completedWorkout.exercisesNumber++
         }
 
         completedWorkout.duration = workoutSeconds
@@ -166,6 +176,7 @@ class ExecutingWorkoutViewModel (
         while (workoutCondition.value != WorkoutCondition.PAUSE
             && workoutCondition.value != WorkoutCondition.END) {
             workoutSeconds++
+            completedWorkout.duration = workoutSeconds
             _stringWorkoutTime.value = formatTime(workoutSeconds)
             delay(1000)
         }
@@ -206,6 +217,7 @@ class ExecutingWorkoutViewModel (
                 _currentSet.value.id = setId
                 _setList.add(_currentSet.value)
                 runRestTimer(setId, detail.restDuration)
+                _currentSet.value.restDuration = restSeconds
                 restSeconds = 0
                 currentExercise.setsNumber++
                 currentExercise.totalReps += detail.reps
@@ -239,7 +251,7 @@ class ExecutingWorkoutViewModel (
             _stringExerciseTime.value = formatTime(exerciseSeconds)
             delay(1000)
         }
-        exerciseSeconds = 0
+
     }
 
     private suspend fun runRestAfterExerciseTimer() {
@@ -249,15 +261,13 @@ class ExecutingWorkoutViewModel (
                 WorkoutCondition.PAUSE -> waitForResume()
                 else -> break
             }
-            exerciseSeconds = 0
-            restSeconds = 0
         }
     }
 
     private suspend fun restAfterExerciseStopwatch() {
         while (workoutCondition.value == WorkoutCondition.REST_AFTER_EXERCISE) {
-            restSeconds++
-            _stringRestTime.value = formatTime(restSeconds)
+            exerciseRestSeconds++
+            _stringRestTime.value = formatTime(exerciseRestSeconds)
             delay(1000)
         }
 
