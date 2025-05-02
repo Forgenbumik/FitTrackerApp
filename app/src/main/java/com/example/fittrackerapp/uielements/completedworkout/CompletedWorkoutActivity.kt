@@ -1,5 +1,6 @@
 package com.example.fittrackerapp.uielements.completedworkout
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,6 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -78,18 +81,20 @@ fun ExercisesList(completedExercises: List<CompletedExercise>, onExerciseClick: 
     }
 }
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun ExerciseItem(completedExercise: CompletedExercise, onExerciseClick: (CompletedExercise, String) -> Unit, viewModel: CompletedWorkoutViewModel = viewModel()) {
 
-    var exerciseName = ""
+    val exerciseName = remember {mutableStateOf("")}
     LaunchedEffect(completedExercise.exerciseId) {
-        exerciseName = viewModel.getExerciseName(completedExercise.exerciseId)
+        exerciseName.value = viewModel.getExerciseName(completedExercise.exerciseId)
     }
 
-    Row(modifier = Modifier.padding(8.dp).clickable { onExerciseClick(completedExercise, exerciseName) }) {
-        Text(exerciseName)
-        Text(" ${completedExercise.duration}")
-        Text(" ${completedExercise.setsNumber} подходов")
+    Row(modifier = Modifier.padding(8.dp).clickable { onExerciseClick(completedExercise, exerciseName.value) }) {
+        Text(exerciseName.value)
+        Text(" Длительность ${viewModel.formatTime(completedExercise.duration)} ")
+        Text("${completedExercise.setsNumber} подходов ")
+        Text("${completedExercise.totalReps} повторений")
     }
 
 }
