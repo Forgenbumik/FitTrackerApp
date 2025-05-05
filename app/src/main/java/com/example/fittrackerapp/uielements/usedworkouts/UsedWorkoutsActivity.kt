@@ -14,19 +14,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
@@ -34,6 +44,7 @@ import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.Workout
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
+import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
 
 class UsedWorkoutsActivity: ComponentActivity() {
     private lateinit var viewModel: UsedWorkoutsViewModel
@@ -46,7 +57,7 @@ class UsedWorkoutsActivity: ComponentActivity() {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
-                        ::addWorkoutToFavourites, ::deleteWorkoutFromFavourites)
+                        ::addWorkoutToFavourites,  ::setSelectedWorkout, ::changeWorkoutClick)
                 }
             }
         }
@@ -71,22 +82,35 @@ class UsedWorkoutsActivity: ComponentActivity() {
         }
     }
 
-    fun deleteWorkoutFromFavourites(workout: BaseWorkout) {
-        viewModel.deleteFavouriteWorkout(workout)
+    fun setSelectedWorkout(baseWorkout: BaseWorkout) {
+        viewModel.setSelectedWorkout(baseWorkout)
+    }
+
+    fun changeWorkoutClick(workoutId: Long) {
+        val intent = Intent(this, CreatingWorkoutActivity::class.java).apply {
+            putExtra("workoutId", workoutId)
+        }
+        startActivity(intent)
     }
 }
 
 @Composable
 fun MainScreen(viewModel: UsedWorkoutsViewModel, modifier: Modifier = Modifier,
-                                onPlusClick: () -> Unit, AddFavouriteClick: (BaseWorkout) -> Unit,
-                                DeleteFavouriteClick: (BaseWorkout) -> Unit) {
+               onPlusClick: () -> Unit,
+               AddFavouriteClick: (BaseWorkout) -> Unit,
+               setSelectedWorkout: (BaseWorkout) -> Unit,
+               changeWorkoutClick: (Long) -> Unit
+               ) {
+
+    val showMenu = remember { mutableStateOf(false)}
+
     UpperBar(onPlusClick)
     val favouriteWorkouts = viewModel.favouriteWorkouts.collectAsState().value
     val workouts = viewModel.workoutsList.collectAsState().value
 
     Column(modifier = modifier) {
-        FavouriteWorkoutsList(favouriteWorkouts, DeleteFavouriteClick)
-        AllWorkoutsList(workouts, AddFavouriteClick)
+        FavouriteWorkoutsList(favouriteWorkouts, showMenu, setSelectedWorkout, changeWorkoutClick)
+        AllWorkoutsList(workouts, setSelectedWorkout, changeWorkoutClick, showMenu)
     }
 }
 
@@ -103,7 +127,12 @@ fun UpperBar(onPlusClick: () -> Unit) {
 }
 
 @Composable
-fun FavouriteWorkoutsList(favouriteWorkouts: List<BaseWorkout>, DeleteFavouriteClick: (BaseWorkout) -> Unit) {
+fun FavouriteWorkoutsList(
+    favouriteWorkouts: List<BaseWorkout>,
+    showMenu: MutableState<Boolean>,
+    setSelectedWorkout: (BaseWorkout) -> Unit,
+    changeWorkoutClick: (Long) -> Unit
+) {
     Text("Избранные сценарии")
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
@@ -111,11 +140,8 @@ fun FavouriteWorkoutsList(favouriteWorkouts: List<BaseWorkout>, DeleteFavouriteC
         items(favouriteWorkouts) { workout ->
             Row {
                 Text(workout.name)
-                IconButton(onClick = { DeleteFavouriteClick(workout) }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete, // Использует стандартную иконку добавления
-                        contentDescription = "Add"
-                    )
+                IconButton(onClick = { showMenu.value = !showMenu.value }) {
+                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More options")
                 }
             }
             HorizontalDivider()
@@ -124,20 +150,93 @@ fun FavouriteWorkoutsList(favouriteWorkouts: List<BaseWorkout>, DeleteFavouriteC
 }
 
 @Composable
-fun AllWorkoutsList(workouts: List<BaseWorkout>, AddFavouriteClick: (BaseWorkout) -> Unit) {
+fun AllWorkoutsList(
+    workouts: List<BaseWorkout>,
+    setSelectedWorkout: (BaseWorkout) -> Unit,
+    changeWorkoutClick: (Long) -> Unit,
+    showMenu: MutableState<Boolean>) {
+
     Text("Все сценарии")
-    Column {
-        for (workout in workouts) {
-            Row() {
-                Text("${workout.name}")
-                IconButton(onClick = { AddFavouriteClick(workout) }) {
-                    Icon(
-                        imageVector = Icons.Default.Add, // Использует стандартную иконку добавления
-                        contentDescription = "Add"
-                    )
+    LazyColumn {
+        items(workouts) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp), // Добавление отступов
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("${it.name}")
+                IconButton(onClick = {
+                    showMenu.value = !showMenu.value
+                    setSelectedWorkout(it)
+                }) {
+                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More options")
                 }
             }
             HorizontalDivider()
         }
     }
+    if (showMenu.value) {
+        ActionMenu(changeWorkoutClick, onDismiss = { showMenu.value = false })
+    }
+}
+
+@Composable
+fun ActionMenu(changeWorkoutClick: (Long) -> Unit,
+               onDismiss: () -> Unit, viewModel: UsedWorkoutsViewModel = viewModel()) {
+    val selectedWorkout = viewModel.selectedWorkout.collectAsState().value
+
+    var showChangeWindow by remember { mutableStateOf(false) }
+
+    DropdownMenu(
+        expanded = true, // Меню открывается для текущего элемента
+        onDismissRequest = { onDismiss() } // Закрытие меню при клике вне
+    ) {
+        DropdownMenuItem(onClick = {
+            if (selectedWorkout != null) {
+                if (selectedWorkout.isFavourite)
+                    viewModel.removeFavouriteWorkout(selectedWorkout)
+                else {
+                    viewModel.addFavouriteWorkout(selectedWorkout)
+                }
+            }
+        },
+            text = {
+                if (selectedWorkout != null) {
+                    if (selectedWorkout.isFavourite)
+                        Text("Удалить из избранного")
+                    else
+                        Text("Добавить в избранное")
+                }
+            })
+        DropdownMenuItem(onClick = {
+            showChangeWindow = true
+        },
+            text = { Text("Изменить") })
+        DropdownMenuItem(onClick = {
+            if (selectedWorkout != null) {
+                viewModel.removeWorkoutFromUsed(selectedWorkout)
+            }
+        },
+            text = { Text("Скрыть") })
+        DropdownMenuItem(onClick = {
+            if (selectedWorkout != null) {
+                viewModel.deleteWorkout(selectedWorkout)
+            }
+        },
+            text = { Text("Удалить") })
+    }
+    if (showChangeWindow) {
+        if (selectedWorkout is Workout) {
+            changeWorkoutClick(selectedWorkout.id)
+        }
+        else {
+            ExerciseChangeWindow(selectedWorkout as Exercise)
+        }
+    }
+}
+
+@Composable
+fun ExerciseChangeWindow(exercise: Exercise) {
+
 }

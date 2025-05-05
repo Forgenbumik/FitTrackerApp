@@ -28,10 +28,11 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.App
-import com.example.fittrackerapp.entities.FavouriteWorkout
-import com.example.fittrackerapp.entities.FavouriteWorkoutRepository
+import com.example.fittrackerapp.abstractclasses.BaseWorkout
+import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
+import com.example.fittrackerapp.entities.Workout
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.workout.WorkoutActivity
@@ -61,7 +62,9 @@ class MainActivity : ComponentActivity() {
         val app = application as App
 
         val factory = MainScreenModelFactory(
-            FavouriteWorkoutRepository(app.appDatabase.favouriteWorkoutDao()),
+            WorkoutsAndExercisesRepository(
+                app.appDatabase.workoutDao(),
+                app.appDatabase.exerciseDao()),
             LastWorkoutRepository(
                 app.appDatabase.lastWorkoutDao(),
                 app.appDatabase.workoutDao(),
@@ -72,20 +75,20 @@ class MainActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this, factory).get(MainScreenViewModel::class.java)
     }
 
-    fun onFavouriteWorkoutClick(workout: FavouriteWorkout) {
-        when (workout.typeId) {
-            1 -> {
+    fun onFavouriteWorkoutClick(workout: BaseWorkout) {
+        when (workout is Workout) {
+            true -> {
                 val intent = Intent(this, WorkoutActivity::class.java).apply {
-                    putExtra("workoutId", workout.workoutId)
-                    putExtra("workoutName", workout.workoutName)
+                    putExtra("workoutId", workout.id)
+                    putExtra("workoutName", workout.name)
                 }
                 startActivity(intent)
             }
 
-            2 -> {
+            false -> {
                 val intent = Intent(this, ExerciseActivity::class.java).apply {
-                    putExtra("exerciseId", workout.workoutId)
-                    putExtra("exerciseName", workout.workoutName)
+                    putExtra("exerciseId", workout.id)
+                    putExtra("exerciseName", workout.name)
                 }
                 startActivity(intent)
             }
@@ -119,7 +122,7 @@ class MainActivity : ComponentActivity() {
 fun CompletedExerciseMainScreen(
     viewModel: MainScreenViewModel = viewModel(),
     modifier: Modifier,
-    onFavouriteWorkoutClick: (FavouriteWorkout) -> Unit,
+    onFavouriteWorkoutClick: (BaseWorkout) -> Unit,
     onLastWorkoutClick: (LastWorkout) -> Unit,
     onAllWorkoutsClick: () -> Unit
 ) {
@@ -137,7 +140,7 @@ fun CompletedExerciseMainScreen(
 
 @Composable
 fun FavouriteWorkoutList(
-    onFavouriteWorkoutClick: (FavouriteWorkout) -> Unit,
+    onFavouriteWorkoutClick: (BaseWorkout) -> Unit,
     onAllWorkoutsClick: () -> Unit,
     viewModel: MainScreenViewModel = viewModel()
 ) {
@@ -158,13 +161,13 @@ fun FavouriteWorkoutList(
 }
 
 @Composable
-fun FavouriteWorkoutItem(modifier: Modifier, workout: FavouriteWorkout, onClick: (FavouriteWorkout) -> Unit) {
+fun FavouriteWorkoutItem(modifier: Modifier, workout: BaseWorkout, onClick: (BaseWorkout) -> Unit) {
     Row(
         modifier = modifier
             .clickable { onClick(workout) },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(workout.workoutName)
+        Text(workout.name)
     }
 }
 

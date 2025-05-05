@@ -19,9 +19,10 @@ class Workout(
     @PrimaryKey(autoGenerate = true) override val id: Long = 0,
     @ColumnInfo override val name: String,
     @ColumnInfo(name = "is_user_defined") val isUserDefined: Boolean,
-    @ColumnInfo(name = "is_used") override val isUsed: Boolean,
+    @ColumnInfo(name = "is_used") override var isUsed: Boolean,
     @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime,
-    @ColumnInfo(name = "is_favourite") override var isFavourite: Boolean = false
+    @ColumnInfo(name = "is_favourite") override var isFavourite: Boolean = false,
+    @ColumnInfo(name = "is_deleted") override var isDeleted: Boolean
 ): BaseWorkout()
 
 @Dao

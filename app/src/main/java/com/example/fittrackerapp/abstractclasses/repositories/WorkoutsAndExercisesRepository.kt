@@ -52,4 +52,21 @@ class WorkoutsAndExercisesRepository(private val workoutDao: WorkoutDao,
             exerciseDao.update(workout)
         }
     }
+
+    suspend fun removeFromUsed(workout: BaseWorkout) {
+        workout.isUsed = false
+        if (workout is Workout)
+            workoutDao.update(workout)
+        else if (workout is Exercise){
+            exerciseDao.update(workout)
+        }
+    }
+
+    suspend fun delete(workout: BaseWorkout) {
+        workout.isDeleted = false
+        if (workout is Workout)
+            workoutDao.update(workout)
+        else if (workout is Exercise)
+            exerciseDao.update(workout)
+    }
 }

@@ -23,7 +23,8 @@ data class Exercise(
     @ColumnInfo(name = "is_used") override var isUsed: Boolean,
     @ColumnInfo(name = "is_user_defined") val isUserDefined: Boolean,
     @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime,
-    @ColumnInfo(name = "is_favourite") override var isFavourite: Boolean = false,
+    @ColumnInfo(name = "is_favourite") override var isFavourite: Boolean,
+    @ColumnInfo(name = "is_deleted") override var isDeleted: Boolean
 ): BaseWorkout()
 
 @Dao
@@ -44,19 +45,19 @@ interface ExerciseDao {
     @Update
     suspend fun update(exercise: Exercise)
 
-    @Query("SELECT * FROM exercises where is_used = 1 and is_favourite = 0")
+    @Query("SELECT * FROM exercises where is_used = 1 and is_favourite = 0 and is_deleted = 0")
     fun getUsedExceptFavouritesFlow(): Flow<List<Exercise>>
 
-    @Query("SELECT * FROM exercises where is_used = 1")
+    @Query("SELECT * FROM exercises where is_used = 1 and is_deleted = 0")
     fun getUsed(): List<Exercise>
 
-    @Query("SELECT * FROM exercises where is_favourite = 1")
+    @Query("SELECT * FROM exercises where is_favourite = 1  and is_deleted = 0")
     fun getFavouritesFlow(): Flow<List<Exercise>>
 
-    @Query("SELECT name FROM exercises")
+    @Query("SELECT name FROM exercises where is_deleted = 0")
     fun getAllExerciseNamesFlow(): Flow<List<String>>
 
-    @Query("SELECT name FROM exercises")
+    @Query("SELECT name FROM exercises where is_deleted = 0")
     fun getAllExerciseNames(): List<String>
 }
 
@@ -64,7 +65,7 @@ class ExerciseRepository(private val dao: ExerciseDao) {
 
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun insert(name: String) {
-        val exercise = Exercise(0, name, true, true, LocalDateTime.now())
+        val exercise = Exercise(0, name, true, true, LocalDateTime.now(), false, false)
         return withContext(Dispatchers.IO) {
             dao.insert(exercise)
         }
