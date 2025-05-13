@@ -35,7 +35,7 @@ interface WorkoutDao {
     suspend fun insert(workout: Workout): Long
 
     @Query("SELECT * FROM workouts WHERE id = :workoutId")
-    suspend fun getById(workoutId: Long): Workout?
+    suspend fun getById(workoutId: Long): Workout
 
     @Delete
     suspend fun delete(workout: Workout)

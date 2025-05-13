@@ -43,7 +43,7 @@ interface CompletedWorkoutDao {
     suspend fun insert(completedWorkout: CompletedWorkout): Long
 
     @Query("SELECT * FROM completed_workouts WHERE id = :completedWorkoutId")
-    suspend fun getById(completedWorkoutId: Long): CompletedWorkout?
+    suspend fun getById(completedWorkoutId: Long): CompletedWorkout
 
     @Delete
     suspend fun delete(completedWorkout: CompletedWorkout)
@@ -63,7 +63,7 @@ class CompletedWorkoutRepository(private val dao: CompletedWorkoutDao) {
         }
     }
 
-    suspend fun getById(completedWorkoutId: Long): CompletedWorkout? {
+    suspend fun getById(completedWorkoutId: Long): CompletedWorkout {
         return withContext(Dispatchers.IO) {
             dao.getById(completedWorkoutId)
         }

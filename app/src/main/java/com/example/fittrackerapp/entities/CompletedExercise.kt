@@ -73,7 +73,7 @@ interface CompletedExerciseDao {
     suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise>
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
-    suspend fun getExerciseById(exerciseId: Long): Exercise?
+    suspend fun getExerciseById(exerciseId: Long): Exercise
 
     @Query("SELECT COUNT(*) from sets WHERE completed_exercise_id = :exerciseId")
     suspend fun getSetsNumber(exerciseId: Long): Int

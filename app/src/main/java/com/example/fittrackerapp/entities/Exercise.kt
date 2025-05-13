@@ -37,10 +37,10 @@ interface ExerciseDao {
     suspend fun insert(exercise: Exercise): Long
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
-    fun getByIdFlow(exerciseId: Long): Flow<Exercise?>
+    fun getByIdFlow(exerciseId: Long): Flow<Exercise>
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
-    suspend fun getById(exerciseId: Long): Exercise?
+    suspend fun getById(exerciseId: Long): Exercise
 
     @Delete
     suspend fun delete(exercise: Exercise)

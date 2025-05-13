@@ -42,7 +42,7 @@ interface SetDao {
     suspend fun insert(set: Set): Long
 
     @Query("SELECT * FROM sets WHERE id = :setId")
-    suspend fun getById(setId: Long): Set?
+    suspend fun getById(setId: Long): Set
 
     @Delete
     suspend fun delete(set: Set)
@@ -68,7 +68,7 @@ class SetRepository(private val dao: SetDao) {
         }
     }
 
-    suspend fun getById(setId: Long): Set? {
+    suspend fun getById(setId: Long): Set {
         return withContext(Dispatchers.IO) {
             dao.getById(setId)
         }
