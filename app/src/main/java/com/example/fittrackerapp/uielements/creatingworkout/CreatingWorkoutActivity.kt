@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
@@ -48,6 +49,11 @@ import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.ClickableRow
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
+import com.example.fittrackerapp.uielements.main.MainActivity
+import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class CreatingWorkoutActivity: ComponentActivity() {
     private lateinit var viewModel: CreatingWorkoutViewModel
@@ -61,7 +67,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(modifier = Modifier.padding(innerPadding), ::onAddExerciseClick)
+                    MainScreen(Modifier.padding(innerPadding), ::onAddExerciseClick, ::onSaveClick)
                 }
             }
         }
@@ -91,18 +97,29 @@ class CreatingWorkoutActivity: ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun onAddExerciseClick() {
-
-
         val intent = Intent(this, AllExercisesActivity::class.java).apply {
             putExtra("reason", "workoutCreating")
         }
         addExerciseLauncher.launch(intent)
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun onSaveClick() {
+        val intent = Intent(this, UsedWorkoutsActivity::class.java)
+
+        lifecycleScope.launch {
+            viewModel.isSaveCompleted
+                .filter { it } // пропускаем, пока не станет true
+                .first()       // ждём первое значение true
+            startActivity(intent)
+            finish()
+        }
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier, onAddExerciseClick: () -> Unit, viewModel: CreatingWorkoutViewModel = viewModel()) {
+fun MainScreen(modifier: Modifier, onAddExerciseClick: () -> Unit, onSaveClick: () -> Unit, viewModel: CreatingWorkoutViewModel = viewModel()) {
     val exercises = viewModel.exercisesList
 
     val workout = viewModel.workout.collectAsState()
@@ -115,11 +132,16 @@ fun MainScreen(modifier: Modifier, onAddExerciseClick: () -> Unit, viewModel: Cr
         Text("Создание сценария тренировки")
         NameField(workout.value.name)
         ExercisesList(exercises, isShowChangeWindow, onAddExerciseClick)
+        Button(onClick = {
+            onSaveClick()
+        }) {
+            Text("Сохранить")
+        }
     }
-
     if (isShowChangeWindow.value) {
         DetailChangeWindow(isShowChangeWindow)
     }
+
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -171,8 +193,8 @@ fun DetailChangeWindow(isShowChangeWindow: MutableState<Boolean>, viewModel: Cre
     ) {
         Column {
             Row {
+                Text("Подходы")
                 Text("Повторения")
-                Text("Вес")
             }
 
             var selectedSetsNumber = detail.setsNumber
@@ -190,12 +212,10 @@ fun DetailChangeWindow(isShowChangeWindow: MutableState<Boolean>, viewModel: Cre
                     ListNumberReps(modifier, detail.reps, onItemSelected = { selectedItem ->
                         selectedRepsNumber = selectedItem
                     })
-
-                    TimePicker(onTimeSelected = {minutes, seconds ->
-                        selectedRestDuration = minutes*60+seconds
-                    })
                 }
-
+                TimePicker(onTimeSelected = {minutes, seconds ->
+                    selectedRestDuration = minutes*60+seconds
+                })
                 Button(onClick = {
                     isShowChangeWindow.value = false
                 }) {
@@ -208,7 +228,7 @@ fun DetailChangeWindow(isShowChangeWindow: MutableState<Boolean>, viewModel: Cre
                             setsNumber = selectedSetsNumber,
                             reps = selectedRepsNumber,
                             restDuration = selectedRestDuration)
-                        viewModel.setSelectedExercise(selectedDetail)
+                        viewModel.updateExerciseDetail(selectedDetail)
                         isShowChangeWindow.value = false
                     }
                 ) {
@@ -222,21 +242,18 @@ fun DetailChangeWindow(isShowChangeWindow: MutableState<Boolean>, viewModel: Cre
 @Composable
 fun ListNumberReps(modifier: Modifier, reps: Int, onItemSelected: (Int) -> Unit) {
 
-    val numberList = (0..100).toList()
+    val numberList = (0..500).toList()
 
     CenteredPicker(items = numberList, selectedIndex = reps, onItemSelected = onItemSelected, modifier = modifier)
 }
 
 @Composable
 fun ListSets(modifier: Modifier, setsNum: Int, onItemSelected: (Int) -> Unit) {
-    val setsNumberList = (0..500).toList()
+    val setsNumberList = (0..100).toList()
 
-
-    Row(modifier = modifier, horizontalArrangement = Arrangement.Center) {
-        CenteredPicker(setsNumberList, selectedIndex = setsNum, onItemSelected = { selected ->
-            onItemSelected(selected)
-        }, modifier = modifier)
-    }
+    CenteredPicker(setsNumberList, selectedIndex = setsNum, onItemSelected = { selected ->
+        onItemSelected(selected)
+    }, modifier = modifier)
 }
 
 @Composable

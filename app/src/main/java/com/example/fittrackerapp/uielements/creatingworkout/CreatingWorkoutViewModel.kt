@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 class CreatingWorkoutViewModel(
-    private val workoutId: Long,
+    private var workoutId: Long,
     private val workoutRepository: WorkoutRepository,
     private val workoutDetailRepository: WorkoutDetailRepository,
     private val exerciseRepository: ExerciseRepository
@@ -40,7 +40,16 @@ class CreatingWorkoutViewModel(
     @RequiresApi(Build.VERSION_CODES.O)
     val workout: StateFlow<Workout> = _workout
 
+    private val _isSaveCompleted = MutableStateFlow(false)
+    val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
+
     init {
+        viewModelScope.launch {
+            if (workoutId != -1L) {
+                _workout.value = workoutRepository.getById(workoutId)
+                _exercisesList.addAll(workoutDetailRepository.getByWorkoutId(workoutId))
+            }
+        }
 
         viewModelScope.launch {
             _workout.value.name = generateName()
@@ -56,10 +65,6 @@ class CreatingWorkoutViewModel(
         return generatedName
     }
 
-    suspend fun getExerciseName(exerciseId: Long): String {
-        return exerciseRepository.getExerciseName(exerciseId)
-    }
-
     fun setSelectedExercise(detail: WorkoutDetail) {
         _selectedExercise.value = detail
     }
@@ -72,13 +77,36 @@ class CreatingWorkoutViewModel(
     }
 
     fun saveWorkout() {
-        viewModelScope.launch {
-            workoutRepository.insert(_workout.value)
-        }
-        viewModelScope.launch {
-            exercisesList.forEach {
-                workoutDetailRepository.insert(it)
+        if (workoutId == -1L) {
+            viewModelScope.launch {
+                workoutId = workoutRepository.insert(_workout.value)
+                exercisesList.forEach {
+                    val detailToAdd = it.copy(workoutId = workoutId)
+                    workoutDetailRepository.insert(detailToAdd)
+                }
+                _isSaveCompleted.value = true
             }
+        } else {
+            viewModelScope.launch {
+                workoutRepository.update(_workout.value)
+                exercisesList.forEach {
+                    if (it.id == 0L) {
+                        val detailToAdd = it.copy(workoutId = workoutId)
+                        workoutDetailRepository.insert(detailToAdd)
+                    }
+                    else {
+                        workoutDetailRepository.update(it)
+                    }
+                }
+                _isSaveCompleted.value = true
+            }
+        }
+    }
+
+    fun updateExerciseDetail(updatedDetail: WorkoutDetail) {
+        val index = _exercisesList.indexOfFirst { it.exerciseId == updatedDetail.exerciseId }
+        if (index != -1) {
+            _exercisesList[index] = updatedDetail
         }
     }
 }
