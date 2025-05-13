@@ -25,7 +25,7 @@ class CompletedExerciseViewModel(
 ): ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private val _completedExercise = MutableStateFlow(CompletedExercise(0,0,0,"", LocalDateTime.now(), 0, 0, 0, 0))
+    private val _completedExercise = MutableStateFlow(CompletedExercise())
     @RequiresApi(Build.VERSION_CODES.O)
     val completedExercise: StateFlow<CompletedExercise> = _completedExercise
 
@@ -35,7 +35,7 @@ class CompletedExerciseViewModel(
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
 
-    private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(Set(0,0,0,0,0.0,0,0))
+    private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(Set())
     val changingSet: StateFlow<Set?> = _changingSet
 
     init {
@@ -43,7 +43,9 @@ class CompletedExerciseViewModel(
             loadCompletedExercise()
         }
         viewModelScope.launch {
-            loadSets()
+            setRepository.getByCompletedExerciseIdFlow(_completedExercise.value.id).collect {
+                _setList = it.toMutableStateList()
+            }
         }
     }
 
@@ -76,6 +78,18 @@ class CompletedExerciseViewModel(
         val minutes = secs / 60 % 60
         val hours = secs / 3600
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
+    }
+
+    fun getExerciseSetsNumber(): Int {
+        return _setList.size
+    }
+
+    fun getExerciseTotalReps(): Int {
+        var totalReps = 0
+        for (set in _setList) {
+            totalReps += set.reps
+        }
+        return totalReps
     }
 }
 

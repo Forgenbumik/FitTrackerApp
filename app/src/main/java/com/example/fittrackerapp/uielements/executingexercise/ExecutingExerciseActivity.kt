@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.uielements.executingworkout
+package com.example.fittrackerapp.uielements.executingexercise
 
 import android.content.Intent
 import android.os.Build
@@ -8,9 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.background
-import androidx.compose.runtime.State
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,20 +43,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
-import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
+import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -65,49 +63,47 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class ExecutingWorkoutActivity : ComponentActivity() {
-    private lateinit var viewModel: ExecutingWorkoutViewModel
+    private lateinit var viewModel: ExecutingExerciseViewModel
 
-    private var workoutName = ""
+    private var exerciseName = ""
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        workoutName = intent.getStringExtra("workoutName") ?: "Тренировка"
+        exerciseName = intent.getStringExtra("exerciseName") ?: "Упражнение"
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(
                         Modifier.padding(innerPadding),
-                        workoutName,
+                        exerciseName,
                         onEndClick = { onEndClick() },
-                        setCondition = {condition -> setCondition(condition)},
-                        formatTime = {secs -> formatTime(secs)})
+                        setCondition = { condition -> setCondition(condition)},
+                        formatTime = { secs -> formatTime(secs)})
                 }
             }
         }
 
         val app = application as App
 
-        val workoutId = intent.getLongExtra("workoutId", -1)
-        val detailId = intent.getLongExtra("detailId", -1)
+        val exerciseid = intent.getLongExtra("workoutId", -1)
+        val plannedSets = intent.getIntExtra("plannedSets", 0)
+        val plannedReps = intent.getIntExtra("plannedReps", 0)
+        val plannedRestDuration = intent.getIntExtra("plannedRestDuration", 0)
 
-        if (workoutId == -1L) {
-            Log.e("WorkoutViewModel", "Ошибка: workoutId не передан в Intent!")
+        if (exerciseid == -1L) {
+            Log.e("ExecutingExerciseActivity", "Ошибка: exerciseId не передан в Intent!")
         }
 
         val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
         val setsRepository = SetRepository(app.appDatabase.setDao())
-        val workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
-        val completedWorkoutRepository = CompletedWorkoutRepository(app.appDatabase.completedWorkoutDao())
         val completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
         val lastWorkoutRepository = LastWorkoutRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
 
-        val factory = ExecutingWorkoutViewModelFactory(workoutId, detailId, exerciseRepository, workoutDetailRepository,
-            setsRepository, completedWorkoutRepository,
-            completedExerciseRepository, lastWorkoutRepository)
+        val factory = ExecutingExerciseViewModelFactory(exerciseid, plannedSets, plannedReps, plannedRestDuration, exerciseRepository, completedExerciseRepository, setsRepository, lastWorkoutRepository)
 
-        viewModel = ViewModelProvider(this, factory).get(ExecutingWorkoutViewModel::class.java)
+        viewModel = ViewModelProvider(this, factory).get(ExecutingExerciseViewModel::class.java)
     }
 
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")
@@ -124,16 +120,15 @@ class ExecutingWorkoutActivity : ComponentActivity() {
                 .first()       // ждём первое значение true
             startActivity(intent)
             finish()
-            super.onBackPressed()
         }
-
+        super.onBackPressed()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun onEndClick() {
 
-        val intent = Intent(this, CompletedWorkoutActivity::class.java).apply {
-            putExtra("completedWorkoutId", viewModel.completedWorkoutId)
+        val intent = Intent(this, CompletedExerciseActivity::class.java).apply {
+            putExtra("completedExerciseId", viewModel.completedExerciseId)
         }
 
         lifecycleScope.launch {
@@ -165,15 +160,14 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-                                workoutName: String, onEndClick: () -> Unit,
-                                setCondition: (WorkoutCondition) -> Unit,
-                                formatTime: (Int) -> String,
-                                viewModel: ExecutingWorkoutViewModel = viewModel(),) {
+fun MainScreen(
+    modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+    exerciseName: String, onEndClick: () -> Unit,
+    setCondition: (WorkoutCondition) -> Unit,
+    formatTime: (Int) -> String,
+    viewModel: ExecutingExerciseViewModel = viewModel()) {
 
-    val stringWorkoutTime = viewModel.stringWorkoutTime.collectAsState().value
-
-    val currentExercise = viewModel.currentExercise.collectAsState().value
+    val exercise = viewModel.exercise
 
     val stringExerciseTime = viewModel.stringExerciseTime.collectAsState().value
 
@@ -187,8 +181,6 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val lastCondition = viewModel.lastCondition.collectAsState().value
 
-    val nextExercise = viewModel.nextExercise.collectAsState()
-
     val setList = viewModel.setList
 
     val context = LocalContext.current
@@ -197,13 +189,9 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val changingSet = viewModel.changingSet.collectAsState()
     Column(modifier = modifier) {
-        Text(workoutName)
-        Text(stringWorkoutTime)
-        if (currentExercise != null) {
-            Text(currentExercise.name)
-        }
+        Text(exerciseName)
         if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
-            val file = currentExercise?.videoPath?.let { File(context.filesDir, it) }
+            val file = exercise.videoPath?.let { File(context.filesDir, it) }
             if (file != null) {
                 VideoPlayerFromFile(file)
             }
@@ -212,11 +200,6 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
         }
 
         Text(stringExerciseTime)
-        if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
-                    || lastCondition == WorkoutCondition.REST_AFTER_EXERCISE
-                    && workoutCondition == WorkoutCondition.PAUSE) {
-            ExerciseInformation(nextExercise, stringRestTime, formatTime)
-        }
         LastSet(lastCondition, workoutCondition, stringSetTime,
             stringRestTime, setCondition, onEndClick, isShowChangeWindow)
     }
@@ -241,18 +224,18 @@ fun SetsTableHeaders() {
             .background(Color.LightGray)
             .padding(8.dp)) {
 
-                val modifier = Modifier.weight(1f)
-                Text("Подход", modifier = modifier, textAlign = TextAlign.Center)
-                Text("Повт.", modifier = modifier, textAlign = TextAlign.Center)
-                Text("Вес", modifier = modifier, textAlign = TextAlign.Center)
-                Text("Время", modifier = modifier, textAlign = TextAlign.Center)
-                Text("Изменить", modifier = modifier, textAlign = TextAlign.Center)
-            }
+        val modifier = Modifier.weight(1f)
+        Text("Подход", modifier = modifier, textAlign = TextAlign.Center)
+        Text("Повт.", modifier = modifier, textAlign = TextAlign.Center)
+        Text("Вес", modifier = modifier, textAlign = TextAlign.Center)
+        Text("Время", modifier = modifier, textAlign = TextAlign.Center)
+        Text("Изменить", modifier = modifier, textAlign = TextAlign.Center)
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingWorkoutViewModel = viewModel()) {
+fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingExerciseViewModel = viewModel()) {
 
     val setListValue = setList
 
@@ -292,7 +275,7 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingWorkoutViewModel = viewModel()) {
+fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingExerciseViewModel = viewModel()) {
 
     ModalBottomSheet(
         onDismissRequest = { isShowChangeWindow.value = false }
@@ -388,7 +371,8 @@ fun ExerciseInformation(nextExercise: State<WorkoutDetail>, stringRestTime: Stat
 fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
             stringSetTime: State<String>, stringRestTime: State<String>,
             setCondition: (WorkoutCondition) -> Unit, onEndClick: () -> Unit,
-            isShowChangeWindow: MutableState<Boolean>) {
+            isShowChangeWindow: MutableState<Boolean>
+) {
 
     Box(
         modifier = Modifier

@@ -5,6 +5,8 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.fittrackerapp.abstractclasses.BaseWorkout
+import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,36 +14,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class AllExercisesViewModel(
-    private val exerciseRepository: ExerciseRepository
+    reason: String?,
+    private val exerciseRepository: ExerciseRepository,
+    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository
 ): ViewModel() {
 
-    val _exercisesList = MutableStateFlow<List<Exercise>>(emptyList())
-    val exercisesList: StateFlow<List<Exercise>> = _exercisesList
+    val _exercisesList = MutableStateFlow<List<BaseWorkout>>(emptyList())
+    val exercisesList: StateFlow<List<BaseWorkout>> = _exercisesList
 
     init {
-        viewModelScope.launch {
-            exerciseRepository.getUsed().collect {
-                _exercisesList.value = it
+        if (reason == "exerciseAdding") {
+            viewModelScope.launch {
+                _exercisesList.value = workoutsAndExercisesRepository.getNotUsed()
             }
+        }
+        else if (reason == "workoutCreating")
+        viewModelScope.launch {
+            _exercisesList.value = exerciseRepository.getAll()
         }
     }
 
-    fun addExercisetoUsed(exercise: Exercise) {
-        exercise.isUsed = true
+    fun addExerciseToUsed(exercise: Exercise) {
+        val exerciseToChange = exercise.copy(isUsed = true)
         viewModelScope.launch {
-            exerciseRepository.update(exercise)
+            exerciseRepository.update(exerciseToChange)
         }
     }
 }
 
 class AllExercisesViewModelFactory(
-    private val exerciseRepository: ExerciseRepository
+    private val reason: String?,
+    private val exerciseRepository: ExerciseRepository,
+    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository
 ) : ViewModelProvider.Factory {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
             modelClass.isAssignableFrom(AllExercisesViewModel::class.java) -> {
-                AllExercisesViewModel(exerciseRepository) as T
+                AllExercisesViewModel(reason, exerciseRepository, workoutsAndExercisesRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class")
         }

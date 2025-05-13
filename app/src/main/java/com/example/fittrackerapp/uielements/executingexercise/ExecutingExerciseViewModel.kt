@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.uielements.executingworkout
+package com.example.fittrackerapp.uielements.executingexercise
 
 import android.os.Build
 import android.util.Log
@@ -11,50 +11,42 @@ import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.LastWorkoutRepository
-import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.WorkoutDetail
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import com.example.fittrackerapp.entities.SetRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 @RequiresApi(Build.VERSION_CODES.O)
-class ExecutingWorkoutViewModel (
-    private val workoutId: Long,
-    exerciseId: Long,
+class ExecutingExerciseViewModel(
+    private val exerciseId: Long,
+    private val plannedSets: Int,
+    private val plannedReps: Int,
+    private val plannedRestDuration: Int,
     private val exerciseRepository: ExerciseRepository,
-    private val workoutDetailRepository: WorkoutDetailRepository,
-    private val setsRepository: SetRepository,
-    private val completedWorkoutRepository: CompletedWorkoutRepository,
     private val completedExerciseRepository: CompletedExerciseRepository,
+    private val setsRepository: SetRepository,
     private val lastWorkoutRepository: LastWorkoutRepository
 ): ViewModel() {
 
-    private var completedWorkout = CompletedWorkout(workoutId = workoutId)
+    var exercise = Exercise()
 
-    var completedWorkoutId = 0L
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    var completedExercise = CompletedExercise()
+
+    var completedExerciseId = 0L
 
     val _isSaveCompleted = MutableStateFlow(false)
     val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
 
     private var exerciseJob: Job? = null
-
-    private var currentExecExercise: CompletedExercise? = null
-
-    private var currentExecExerciseId = exerciseId
-
-    private val _nextExercise = MutableStateFlow(WorkoutDetail())
-    val nextExercise: StateFlow<WorkoutDetail> = _nextExercise
 
     private val _currentSet: MutableStateFlow<Set> = MutableStateFlow(Set())
     val currentSet: StateFlow<Set> = _currentSet
@@ -68,14 +60,7 @@ class ExecutingWorkoutViewModel (
     private val _lastCondition = MutableStateFlow(WorkoutCondition.PAUSE)
     val lastCondition: StateFlow<WorkoutCondition> = _lastCondition
 
-    private var workoutSeconds = 0
-
-    private val _stringWorkoutTime = MutableStateFlow("00:00")
-    val stringWorkoutTime: StateFlow<String> = _stringWorkoutTime
-
     private var exerciseSeconds = 0
-
-    private var exerciseRestSeconds = 0
 
     private val _stringExerciseTime = MutableStateFlow("00:00")
     val stringExerciseTime: StateFlow<String> = _stringExerciseTime
@@ -93,91 +78,19 @@ class ExecutingWorkoutViewModel (
     private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(null)
     val changingSet: StateFlow<Set?> = _changingSet
 
-    private val _currentExercise = MutableStateFlow(Exercise())
-    val currentExercise: StateFlow<Exercise?> = _currentExercise
-
     init {
         viewModelScope.launch {
-            runWorkoutTimer()
-        }
-        viewModelScope.launch {
-            runWorkout()
-        }
-    }
-
-    private suspend fun runWorkout() {
-        completedWorkoutId = completedWorkoutRepository.insert(completedWorkout)
-        completedWorkout = completedWorkout.copy(id = completedWorkoutId)
-        val details = workoutDetailRepository.getByWorkoutId(workoutId).toMutableList()
-        val firstExercise = details.first { it.exerciseId == currentExecExerciseId }
-        details.remove(firstExercise)
-        details.add(0, firstExercise)
-        for (i in 0..(details.size-1)) {
-            if (_workoutCondition.value != WorkoutCondition.END) {
-                if (i+1 != details.size) {
-                    _nextExercise.value = details[i+1]
-                }
-                runExercise(details[i])
-                currentExecExercise = currentExecExercise?.copy(duration = exerciseSeconds)
-                exerciseSeconds = 0
-                if (_workoutCondition.value != WorkoutCondition.END) {
-                    setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-                }
-                runRestAfterExerciseTimer()
-
-                currentExecExercise = currentExecExercise?.copy(restDuration = exerciseRestSeconds)
-                exerciseRestSeconds = 0
-                if (_setList.isNotEmpty()) {
-                    completedExerciseRepository.update(currentExecExercise!!)
-                }
-                else {
-                    completedExerciseRepository.delete(currentExecExercise!!)
-                    currentExecExercise = null
+            exerciseRepository.getByIdFlow(exerciseId).collect {
+                if (it != null) {
+                    exercise = it
                 }
             }
         }
-
-        completedWorkout = completedWorkout.copy(duration = workoutSeconds)
-        completedWorkoutRepository.update(completedWorkout)
-        delay(1000)
-        insertLastWorkout()
-        setCondition(WorkoutCondition.END)
-    }
-
-     fun insertLastWorkout() {
-         if (_isSaveCompleted.value) return
-         viewModelScope.launch {
-             lastWorkoutRepository.insertLastWorkout(completedWorkout)
-             Log.d("LastWorkout", "Last workout inserted")
-             _isSaveCompleted.value = true
-         }
-    }
-
-    fun updateSet(set: Set, reps: Int, weight: Double) {
-        val newSet = set.copy(reps = reps, weight = weight)
-        _setList[set.setNumber - 1] = newSet
         viewModelScope.launch {
-            setsRepository.update(newSet)
+            runExercise()
         }
-    }
-
-    private suspend fun runWorkoutTimer() {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.END -> break
-                else -> workoutStopwatch()
-            }
-        }
-    }
-
-    suspend fun workoutStopwatch() {
-        while (workoutCondition.value != WorkoutCondition.PAUSE
-            && workoutCondition.value != WorkoutCondition.END) {
-            workoutSeconds++
-            completedWorkout = completedWorkout.copy(duration = workoutSeconds)
-            _stringWorkoutTime.value = formatTime(workoutSeconds)
-            delay(1000)
+        viewModelScope.launch {
+            runExerciseTimer()
         }
     }
 
@@ -188,7 +101,8 @@ class ExecutingWorkoutViewModel (
         }
     }
 
-    private suspend fun runExercise(detail: WorkoutDetail) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun runExercise() {
 
         exerciseJob?.cancel()
         exerciseJob = viewModelScope.launch {
@@ -201,29 +115,29 @@ class ExecutingWorkoutViewModel (
                 }
             }
         }
-        currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId)
-        currentExecExerciseId = completedExerciseRepository.insert(currentExecExercise!!)
-        currentExecExercise = currentExecExercise?.copy(id = currentExecExerciseId)
-        _currentExercise.value = exerciseRepository.getById(detail.exerciseId)!!
+        completedExercise = CompletedExercise(exerciseId = exerciseId)
+        completedExerciseId = completedExerciseRepository.insert(completedExercise)
+        completedExercise = completedExercise.copy(id = completedExerciseId)
 
-        for (i in 1..detail.setsNumber) {
+        for (i in 1..plannedSets) {
             if (workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                if (workoutCondition.value == WorkoutCondition.END) return
-                _currentSet.value = Set(0, currentExecExerciseId, setSeconds, detail.reps, 0.0, 0, i)
+                _currentSet.value = Set(completedExerciseId = completedExerciseId, duration =  setSeconds, reps = plannedReps, setNumber =  i)
                 val setId = setsRepository.insert(_currentSet.value)
                 _currentSet.value = _currentSet.value.copy(id = setId)
                 _setList.add(_currentSet.value)
-                runRestTimer(setId, detail.restDuration)
+                runRestTimer(setId, plannedRestDuration)
                 _currentSet.value = _currentSet.value.copy(restDuration = restSeconds)
                 restSeconds = 0
             }
         }
         _setList.clear()
-        currentExecExercise = currentExecExercise?.copy(duration = exerciseSeconds)
-        completedExerciseRepository.update(currentExecExercise!!)
+        completedExercise = completedExercise.copy(duration = exerciseSeconds)
+        completedExerciseRepository.update(completedExercise)
+        insertLastWorkout()
+        setCondition(WorkoutCondition.END)
     }
 
     private suspend fun runExerciseTimer() {
@@ -249,24 +163,23 @@ class ExecutingWorkoutViewModel (
             _stringExerciseTime.value = formatTime(exerciseSeconds)
             delay(1000)
         }
-
     }
 
-    private suspend fun runRestAfterExerciseTimer() {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.REST_AFTER_EXERCISE -> restAfterExerciseStopwatch()
-                WorkoutCondition.PAUSE -> waitForResume()
-                else -> break
-            }
+    fun updateSet(set: Set, reps: Int, weight: Double) {
+        val newSet = set.copy(reps = reps, weight = weight)
+        _setList[set.setNumber - 1] = newSet
+        viewModelScope.launch {
+            setsRepository.update(newSet)
         }
     }
 
-    private suspend fun restAfterExerciseStopwatch() {
-        while (workoutCondition.value == WorkoutCondition.REST_AFTER_EXERCISE) {
-            exerciseRestSeconds++
-            _stringRestTime.value = formatTime(exerciseRestSeconds)
-            delay(1000)
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun insertLastWorkout() {
+        if (_isSaveCompleted.value) return
+        viewModelScope.launch {
+            lastWorkoutRepository.insertLastWorkout(completedExercise)
+            Log.d("LastWorkout", "Last workout inserted")
+            _isSaveCompleted.value = true
         }
     }
 
@@ -342,25 +255,26 @@ class ExecutingWorkoutViewModel (
     }
 }
 
-class ExecutingWorkoutViewModelFactory(
-    private val workoutId: Long,
+class ExecutingExerciseViewModelFactory(
     private val exerciseId: Long,
+    private val plannedSets: Int,
+    private val plannedReps: Int,
+    private val plannedRestDuration: Int,
     private val exerciseRepository: ExerciseRepository,
-    private val workoutDetailRepository: WorkoutDetailRepository,
-    private val setsRepository: SetRepository,
-    private val completedWorkoutRepository: CompletedWorkoutRepository,
     private val completedExerciseRepository: CompletedExerciseRepository,
+    private val setsRepository: SetRepository,
     private val lastWorkoutRepository: LastWorkoutRepository
 ) : ViewModelProvider.Factory {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(ExecutingWorkoutViewModel::class.java) -> {
-                ExecutingWorkoutViewModel(workoutId, exerciseId, exerciseRepository, workoutDetailRepository,
-                    setsRepository, completedWorkoutRepository,
-                    completedExerciseRepository, lastWorkoutRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
+        if (modelClass.isAssignableFrom(ExecutingExerciseViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ExecutingExerciseViewModel(
+                exerciseId, plannedSets, plannedReps,
+                plannedRestDuration, exerciseRepository,
+                completedExerciseRepository, setsRepository,
+                lastWorkoutRepository) as T
         }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -1,33 +1,41 @@
 [versions]
 activityKtx = "1.10.1"
-agp = "8.8.0"
+agp = "8.8.2"
 dagger = "2.48"
 daggerCompiler = "2.48"
 jetbrainsKotlinxMetadataJvm = "0.5.0"
 kotlin = "2.1.0"
-coreKtx = "1.15.0"
+coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 kotlinGradlePlugin = "<latest_version>"
-kotlinStdlib = "1.9.0"
+kotlinStdlib = "2.1.10"
 kotlinxMetadataJvm = "0.9.0"
-lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.9.3"
-composeBom = "2024.12.01"
-lifecycleViewmodelKtx = "2.8.7"
+kotlinxMetadataJvmVersion = "0.9.0"
+lifecycleRuntimeKtx = "2.9.0"
+activityCompose = "1.10.1"
+composeBom = "2025.05.00"
+lifecycleViewmodelKtx = "2.9.0"
+media3Common = "1.6.1"
+media3Exoplayer = "1.6.1"
+media3Ui = "1.6.1"
 reorderable = "0.9.6"
-roomCompiler = "2.6.1"
-roomKtx = "2.6.1"
-roomRuntime = "2.6.1"
-databindingAdapters = "8.8.0"
-navigationRuntimeKtx = "2.8.9"
+roomCompiler = "2.7.1"
+roomKtx = "2.7.1"
+roomRuntime = "2.7.1"
+databindingAdapters = "8.10.0"
+navigationRuntimeKtx = "2.9.0"
+roomRuntimeAndroid = "2.7.1"
 
 [libraries]
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
+androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "media3Common" }
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
+androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3Ui" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
@@ -51,8 +59,10 @@ androidx-databinding-adapters = { group = "androidx.databinding", name = "databi
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinStdlib" }
 kotlinx-metadata-jvm = { module = "org.jetbrains.kotlin:kotlinx-metadata-jvm", version.ref = "kotlinxMetadataJvm" }
+kotlinx-metadata-jvm-v090 = { module = "org.jetbrains.kotlinx:kotlinx-metadata-jvm", version.ref = "kotlinxMetadataJvmVersion" }
 reorderable = { module = "org.burnoutcrew.composereorderable:reorderable", version.ref = "reorderable" }
 androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

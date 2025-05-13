@@ -20,6 +20,7 @@ android {
 
         kapt {
             arguments {arg("room.schemaLocation", "$projectDir/schemas")}
+            correctErrorTypes = true
         }
     }
 
@@ -55,6 +56,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.databinding.adapters)
     implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.room.runtime.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -67,8 +69,11 @@ dependencies {
     implementation(libs.androidx.room.ktx) // Дополнительно для Kotlin Coroutines, Kotlin Flows
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlin.stdlib)
-    kapt(libs.jetbrains.kotlinx.metadata.jvm)
+    implementation(libs.kotlinx.metadata.jvm.v090)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.reorderable)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
 }

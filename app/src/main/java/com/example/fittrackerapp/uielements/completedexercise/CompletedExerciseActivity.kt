@@ -31,8 +31,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -50,6 +54,7 @@ import com.example.fittrackerapp.entities.CompletedExerciseRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
+import com.example.fittrackerapp.uielements.CenteredPicker
 import kotlinx.coroutines.launch
 
 class CompletedExerciseActivity: ComponentActivity() {
@@ -106,26 +111,38 @@ fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExe
 
     val changingSet = viewModel.changingSet.collectAsState()
 
+    val isShowChangeWindow = remember { mutableStateOf(false) }
+
     Column(
         modifier.windowInsetsPadding(WindowInsets.statusBars)
     ) {
         Text(exerciseName)
         ExerciseInformation(completedExercise)
-        SetsTable(setList, formatTime, setChangingSet = setChangingSet, changingSet = changingSet)
+        SetsTable(setList, formatTime, isShowChangeWindow)
     }
-}
 
-@Composable
-fun ExerciseInformation(exercise: CompletedExercise) {
-    Text("Подходов: ${exercise.setsNumber}. Всего повторений: ${exercise.totalReps}")
+    if (isShowChangeWindow.value && changingSet.value != null) {
+        SetChangeWindow(changingSet.value!!, isShowChangeWindow)
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
+fun ExerciseInformation(exercise: CompletedExercise, viewModel: CompletedExerciseViewModel = viewModel()) {
+
+    val exerciseSetsNumber = viewModel.getExerciseSetsNumber()
+
+    val exerciseTotalReps = viewModel.getExerciseTotalReps()
+
+    Text("Подходов: ${exerciseSetsNumber}. Всего повторений: ${exerciseTotalReps}")
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: CompletedExerciseViewModel = viewModel()) {
     Column {
         SetsTableHeaders()
-        SetsStrings(setList, formatTime, setChangingSet = setChangingSet, changingSet = changingSet)
+        SetsStrings(setList, formatTime, isShowChangeWindow)
     }
 }
 
@@ -148,10 +165,7 @@ fun SetsTableHeaders() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, viewModel: CompletedExerciseViewModel = viewModel(), setChangingSet: (Set) -> Unit, changingSet: State<Set?>) {
-
-    val showSheet = viewModel.isChangingSet.collectAsState().value
-    val changingSetValue = changingSet.value
+fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: CompletedExerciseViewModel = viewModel()) {
 
     val setListValue = setList
 
@@ -187,18 +201,16 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, vi
             HorizontalDivider() // Разделитель между строками
         }
     }
-    if (showSheet && changingSetValue != null) {
-        SetChangeWindow(changingSetValue, setIsChangingSet = { showSheet-> viewModel.setIsChangingSet(showSheet)})
-    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetChangeWindow(set: Set, viewModel: CompletedExerciseViewModel = viewModel(), setIsChangingSet: (Boolean) -> Unit, ) {
+fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewModel: CompletedExerciseViewModel = viewModel()) {
 
     ModalBottomSheet(
-        onDismissRequest = { setIsChangingSet(false) }
+        onDismissRequest = { isShowChangeWindow.value = false }
     ) {
         Column {
             Row {
@@ -222,7 +234,7 @@ fun SetChangeWindow(set: Set, viewModel: CompletedExerciseViewModel = viewModel(
                 Button(
                     onClick = {
                         viewModel.updateSet(set, selectedRepsNumber, selectedWeight)
-                        setIsChangingSet(false)
+                        isShowChangeWindow.value = false
                         viewModel.setChangingSet(null)
                     }
                 ) {
@@ -260,67 +272,5 @@ fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSel
             decimalWeight = selectedDecimal
             onItemSelected(integerWeight, decimalWeight)
         }, modifier = modifier)
-    }
-
-
-}
-
-@Composable
-fun CenteredPicker(
-    items: List<Int>,
-    modifier: Modifier = Modifier,
-    selectedIndex: Int,
-    onItemSelected: (Int) -> Unit
-) {
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-    val itemHeight = 50.dp
-    val visibleItemsCount = 5
-    val centerIndex = visibleItemsCount/2
-
-    Box(modifier = modifier.height(itemHeight * visibleItemsCount)) {
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(vertical = itemHeight * centerIndex),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            coroutineScope.launch {
-                listState.animateScrollToItem(selectedIndex)
-            }
-
-            items(items) { item ->
-                val center = listState.firstVisibleItemIndex
-                val isSelected = item == center
-
-                CenteredListItem(onItemSelected, item, isSelected, itemHeight)
-            }
-        }
-
-        // Overlay для выделения центра
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth()
-                .height(itemHeight)
-                .background(Color.LightGray.copy(alpha = 0.2f))
-        )
-    }
-}
-
-@Composable
-fun CenteredListItem(onItemSelected: (Int) -> Unit, item: Int, isSelected: Boolean, itemHeight: Dp, ) {
-    Text(
-        text = "$item",
-        fontSize = if (isSelected) 24.sp else 16.sp,
-        color = if (isSelected) Color.Black else Color.Gray,
-        modifier = Modifier
-            .height(itemHeight)
-            .fillMaxWidth()
-            .wrapContentHeight(),
-        textAlign = TextAlign.Center
-    )
-    if (isSelected) {
-        onItemSelected(item)
     }
 }

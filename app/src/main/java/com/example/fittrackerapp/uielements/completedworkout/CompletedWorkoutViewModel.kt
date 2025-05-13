@@ -38,6 +38,14 @@ class CompletedWorkoutViewModel(
         val hours = secs / 3600
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
+
+    suspend fun getExerciseSetsNumber(exerciseId: Long): Int {
+        return completedExerciseRepository.getSetsNumber(exerciseId)
+    }
+
+    suspend fun getExerciseTotalReps(exerciseId: Long): Int {
+        return completedExerciseRepository.getTotalReps(exerciseId)
+    }
 }
 
 class CompletedWorkoutViewModelFactory(

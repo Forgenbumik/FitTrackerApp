@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 @Entity(
@@ -33,14 +34,14 @@ import kotlinx.coroutines.withContext
 )
 data class WorkoutDetail(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    @ColumnInfo val position: Int,
-    @ColumnInfo(name = "workout_id") val workoutId: Long,
-    @ColumnInfo(name = "exercise_id") val exerciseId: Long,
-    @ColumnInfo(name = "exercise_name") val exerciseName: String,
-    @ColumnInfo(name = "sets_number") val setsNumber: Int,
-    @ColumnInfo val reps: Int,
-    @ColumnInfo(name = "rest_duration") val restDuration: Int,
-    @ColumnInfo(name = "is_rest_manually") val isRestManually: Boolean
+    @ColumnInfo val position: Int = 0,
+    @ColumnInfo(name = "workout_id") val workoutId: Long = 0,
+    @ColumnInfo(name = "exercise_id") val exerciseId: Long = 0,
+    @ColumnInfo(name = "exercise_name") var exerciseName: String = "",
+    @ColumnInfo(name = "sets_number") val setsNumber: Int = 0,
+    @ColumnInfo val reps: Int = 0,
+    @ColumnInfo(name = "rest_duration") val restDuration: Int = 0,
+    @ColumnInfo(name = "is_rest_manually") val isRestManually: Boolean = false
 )
 
 @Dao
@@ -59,6 +60,12 @@ interface WorkoutDetailDao {
 
     @Query("SELECT * FROM workout_details WHERE workout_id = :workoutId")
     suspend fun getByWorkout(workoutId: Long): List<WorkoutDetail>
+
+    @Query("SELECT * FROM workout_details WHERE workout_id = :workoutId")
+    fun getByWorkoutFlow(workoutId: Long): Flow<List<WorkoutDetail>>
+
+    @Query("DELETE from workout_details where exercise_id = :exerciseId")
+    fun deleteExerciseFromWorkout(exerciseId: Long)
 }
 
 class WorkoutDetailRepository(private val dao: WorkoutDetailDao) {
@@ -90,6 +97,12 @@ class WorkoutDetailRepository(private val dao: WorkoutDetailDao) {
     suspend fun getByWorkoutId(workoutId: Long): List<WorkoutDetail> {
         return withContext(Dispatchers.IO) {
             dao.getByWorkout(workoutId)
+        }
+    }
+
+    suspend fun getByWorkoutIdFlow(workoutId: Long): Flow<List<WorkoutDetail>> {
+        return withContext(Dispatchers.IO) {
+            dao.getByWorkoutFlow(workoutId)
         }
     }
 }

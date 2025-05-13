@@ -2,18 +2,25 @@ package com.example.fittrackerapp.uielements.creatingworkout
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.fittrackerapp.entities.Exercise
+import androidx.room.util.copy
 import com.example.fittrackerapp.entities.ExerciseRepository
+import com.example.fittrackerapp.entities.Workout
+import com.example.fittrackerapp.entities.WorkoutDetail
 
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.entities.WorkoutRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 class CreatingWorkoutViewModel(
+    private val workoutId: Long,
     private val workoutRepository: WorkoutRepository,
     private val workoutDetailRepository: WorkoutDetailRepository,
     private val exerciseRepository: ExerciseRepository
@@ -22,38 +29,62 @@ class CreatingWorkoutViewModel(
 
     private var generatedName = ""
 
-    private val _exercisesList = MutableStateFlow<List<Exercise>>(emptyList())
-    val exercisesList = _exercisesList
+    private var _exercisesList = mutableStateListOf<WorkoutDetail>()
+    val exercisesList: SnapshotStateList<WorkoutDetail> get() = _exercisesList
+
+    private val _selectedExercise = MutableStateFlow(WorkoutDetail())
+    val selectedExercise: StateFlow<WorkoutDetail> =_selectedExercise
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private val _workout: MutableStateFlow<Workout> = MutableStateFlow(Workout())
+    @RequiresApi(Build.VERSION_CODES.O)
+    val workout: StateFlow<Workout> = _workout
 
     init {
-        viewModelScope.launch {
-            generateName()
-        }
 
+        viewModelScope.launch {
+            _workout.value.name = generateName()
+        }
     }
 
     fun setWorkoutName(name: String) {
-        workoutName = name
+        _workout.value = _workout.value.copy(name = name)
     }
 
-    fun getWorkoutName(): String {
-        return workoutName
-    }
-
-    fun getGeneratedName(): String {
+    suspend fun generateName(): String {
+        val generatedName = "Сценарий ${workoutRepository.getWorkoutsNames().size + 1}"
         return generatedName
     }
 
-    suspend fun generateName() {
-        generatedName = "Сценарий ${workoutRepository.getWorkoutsNames().size + 1}"
+    suspend fun getExerciseName(exerciseId: Long): String {
+        return exerciseRepository.getExerciseName(exerciseId)
     }
 
-    suspend fun getExercises() {
-        exerciseRepository.getUsed()
+    fun setSelectedExercise(detail: WorkoutDetail) {
+        _selectedExercise.value = detail
+    }
+
+    fun addExerciseToList(workoutDetail: WorkoutDetail) {
+        viewModelScope.launch {
+            workoutDetail.exerciseName = exerciseRepository.getExerciseName(workoutDetail.exerciseId)
+            _exercisesList.add(workoutDetail)
+        }
+    }
+
+    fun saveWorkout() {
+        viewModelScope.launch {
+            workoutRepository.insert(_workout.value)
+        }
+        viewModelScope.launch {
+            exercisesList.forEach {
+                workoutDetailRepository.insert(it)
+            }
+        }
     }
 }
 
 class CreatingWorkoutViewModelFactory(
+    private val workoutId: Long,
     private val workoutRepository: WorkoutRepository,
     private val workoutDetailRepository: WorkoutDetailRepository,
     private val exerciseRepository: ExerciseRepository
@@ -62,7 +93,7 @@ class CreatingWorkoutViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
             modelClass.isAssignableFrom(CreatingWorkoutViewModel::class.java) -> {
-                CreatingWorkoutViewModel(workoutRepository, workoutDetailRepository, exerciseRepository) as T
+                CreatingWorkoutViewModel(workoutId, workoutRepository, workoutDetailRepository, exerciseRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class")
         }

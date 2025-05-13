@@ -1,5 +1,7 @@
 package com.example.fittrackerapp.entities
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -34,16 +36,16 @@ import java.time.LocalDateTime
         )
     ]
 )
+
+@RequiresApi(Build.VERSION_CODES.O)
 data class CompletedExercise(
-    @PrimaryKey(autoGenerate = true) override var id: Long = 0,
-    @ColumnInfo(name = "exercise_id") val exerciseId: Long,
-    @ColumnInfo override var duration: Int,
-    @ColumnInfo override val notes: String?,
-    @ColumnInfo(name = "begin_time") override val beginTime: LocalDateTime,
-    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long?,
-    @ColumnInfo(name = "rest_duration") var restDuration : Int,
-    @ColumnInfo(name = "total_reps") var totalReps: Int,
-    @ColumnInfo(name = "sets_number") var setsNumber: Int
+    @PrimaryKey(autoGenerate = true) override val id: Long = 0,
+    @ColumnInfo(name = "exercise_id") val exerciseId: Long = 0,
+    @ColumnInfo override val duration: Int = 0,
+    @ColumnInfo override val notes: String? = null,
+    @ColumnInfo(name = "begin_time") override val beginTime: LocalDateTime = LocalDateTime.now(),
+    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long? = null,
+    @ColumnInfo(name = "rest_duration") val restDuration : Int = 0
 ): BaseCompletedWorkout()
 
 @Dao
@@ -72,6 +74,12 @@ interface CompletedExerciseDao {
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
     suspend fun getExerciseById(exerciseId: Long): Exercise?
+
+    @Query("SELECT COUNT(*) from sets WHERE completed_exercise_id = :exerciseId")
+    suspend fun getSetsNumber(exerciseId: Long): Int
+
+    @Query("SELECT SUM(reps) from sets WHERE completed_exercise_id = :exerciseId")
+    suspend fun getTotalReps(exerciseId: Long): Int
 }
 
 class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
@@ -113,6 +121,18 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
     suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise> {
         return withContext(Dispatchers.IO) {
             dao.getByCompletedWorkoutId(completedWorkoutId)
+        }
+    }
+
+    suspend fun getSetsNumber(exerciseId: Long): Int {
+        return withContext(Dispatchers.IO) {
+            dao.getSetsNumber(exerciseId)
+        }
+    }
+
+    suspend fun getTotalReps(exerciseId: Long): Int {
+        return withContext(Dispatchers.IO) {
+            dao.getTotalReps(exerciseId)
         }
     }
 

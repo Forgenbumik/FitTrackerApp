@@ -1,54 +1,92 @@
 package com.example.fittrackerapp.uielements.usedworkouts
 
 import android.content.Intent
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
 import com.example.fittrackerapp.entities.Exercise
+import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.Workout
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
+import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
+import com.example.fittrackerapp.uielements.exercise.ExerciseActivity
+import com.example.fittrackerapp.uielements.workout.WorkoutActivity
+import java.io.File
 
 class UsedWorkoutsActivity: ComponentActivity() {
     private lateinit var viewModel: UsedWorkoutsViewModel
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -57,16 +95,18 @@ class UsedWorkoutsActivity: ComponentActivity() {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
-                        ::addWorkoutToFavourites,  ::setSelectedWorkout, ::changeWorkoutClick)
+                        ::changeWorkoutClick, ::deleteExerciseIcon, ::onWorkoutClick)
                 }
             }
         }
 
         val app = application as App
 
-        val workoutRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
+        val workoutsAndExercisesRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao(), app.appDatabase.workoutDetailDao())
 
-        val factory = UsedWorkoutsViewModelFactory(workoutRepository)
+        val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
+
+        val factory = UsedWorkoutsViewModelFactory(workoutsAndExercisesRepository, exerciseRepository)
 
         viewModel = ViewModelProvider(this, factory).get(UsedWorkoutsViewModel::class.java)
     }
@@ -76,41 +116,65 @@ class UsedWorkoutsActivity: ComponentActivity() {
         startActivity(intent)
     }
 
-    fun addWorkoutToFavourites(workout: BaseWorkout) {
-        if (!viewModel.addFavouriteWorkout(workout)) {
-            Toast.makeText(this, "Превышено допустимое количество избранных тренировок", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun setSelectedWorkout(baseWorkout: BaseWorkout) {
-        viewModel.setSelectedWorkout(baseWorkout)
-    }
-
     fun changeWorkoutClick(workoutId: Long) {
         val intent = Intent(this, CreatingWorkoutActivity::class.java).apply {
             putExtra("workoutId", workoutId)
         }
         startActivity(intent)
     }
+
+    fun deleteExerciseIcon(context: Context, exercise: Exercise) {
+        viewModel.deleteExerciseIcon(context, exercise)
+    }
+
+    fun onWorkoutClick(baseWorkout: BaseWorkout) {
+        val intent: Intent
+        if (baseWorkout is Workout) {
+            intent = Intent(this, WorkoutActivity::class.java).apply {
+                putExtra("workoutId", baseWorkout.id)
+            }
+        }
+        else {
+            intent = Intent(this, ExerciseActivity::class.java).apply {
+                putExtra("exerciseId", baseWorkout.id)
+            }
+        }
+        startActivity(intent)
+    }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(viewModel: UsedWorkoutsViewModel, modifier: Modifier = Modifier,
-               onPlusClick: () -> Unit,
-               AddFavouriteClick: (BaseWorkout) -> Unit,
-               setSelectedWorkout: (BaseWorkout) -> Unit,
-               changeWorkoutClick: (Long) -> Unit
-               ) {
+fun MainScreen(
+    viewModel: UsedWorkoutsViewModel = viewModel(), modifier: Modifier = Modifier,
+    onPlusClick: () -> Unit,
+    changeWorkoutClick: (Long) -> Unit,
+    deleteExerciseIcon: (Context, Exercise) -> Unit,
+    onWorkoutClick: (BaseWorkout) -> Unit
+) {
 
-    val showMenu = remember { mutableStateOf(false)}
+    val isMenuVisible = remember { mutableStateOf(false)}
+    val isChangeWindowVisible = remember { mutableStateOf(false) }
+    val selectedWorkout = viewModel.selectedWorkout.collectAsState().value
 
-    UpperBar(onPlusClick)
     val favouriteWorkouts = viewModel.favouriteWorkouts.collectAsState().value
     val workouts = viewModel.workoutsList.collectAsState().value
 
+    val menuOffset = remember { mutableStateOf(Offset.Zero) }
+
     Column(modifier = modifier) {
-        FavouriteWorkoutsList(favouriteWorkouts, showMenu, setSelectedWorkout, changeWorkoutClick)
-        AllWorkoutsList(workouts, setSelectedWorkout, changeWorkoutClick, showMenu)
+        UpperBar(onPlusClick)
+        FavouriteWorkoutsList(favouriteWorkouts, menuOffset, isMenuVisible, onWorkoutClick)
+        AllWorkoutsList(workouts, menuOffset, isMenuVisible, onWorkoutClick)
+    }
+
+    if (isMenuVisible.value && selectedWorkout != null) {
+        ActionMenu(
+            menuOffset.value,
+            changeWorkoutClick = changeWorkoutClick,
+            onDismiss = { isMenuVisible.value = false },
+            isChangeWindowVisible
+        )
     }
 }
 
@@ -126,117 +190,309 @@ fun UpperBar(onPlusClick: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FavouriteWorkoutsList(
     favouriteWorkouts: List<BaseWorkout>,
-    showMenu: MutableState<Boolean>,
-    setSelectedWorkout: (BaseWorkout) -> Unit,
-    changeWorkoutClick: (Long) -> Unit
+    menuOffset: MutableState<Offset>,
+    isMenuVisible: MutableState<Boolean>,
+    onWorkoutClick: (BaseWorkout) -> Unit
 ) {
-    Text("Избранные сценарии")
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        items(favouriteWorkouts) { workout ->
-            Row {
-                Text(workout.name)
-                IconButton(onClick = { showMenu.value = !showMenu.value }) {
-                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More options")
+    Column {
+        Text("Избранные сценарии")
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(favouriteWorkouts) { workout ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp).clickable {
+                            onWorkoutClick(workout)
+                        },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (workout is Exercise) {
+                        val bitmap = BitmapFactory.decodeFile(workout.iconPath)
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.size(128.dp)
+                        )
+                    }
+                    Text(workout.name)
+                    ButtonMore(menuOffset, isMenuVisible, workout)
                 }
+                HorizontalDivider()
             }
-            HorizontalDivider()
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AllWorkoutsList(
     workouts: List<BaseWorkout>,
-    setSelectedWorkout: (BaseWorkout) -> Unit,
-    changeWorkoutClick: (Long) -> Unit,
-    showMenu: MutableState<Boolean>) {
+    menuOffset: MutableState<Offset>,
+    isMenuVisible: MutableState<Boolean>,
+    onWorkoutClick: (BaseWorkout) -> Unit
+) {
+    val context = LocalContext.current
 
-    Text("Все сценарии")
+    Text("Больше упражнений")
+
     LazyColumn {
-        items(workouts) {
+        items(workouts) { workout ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp), // Добавление отступов
+                    .padding(16.dp).clickable {
+                        onWorkoutClick(workout)
+                    },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("${it.name}")
-                IconButton(onClick = {
-                    showMenu.value = !showMenu.value
-                    setSelectedWorkout(it)
-                }) {
-                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More options")
+                if (workout is Exercise) {
+                    workout.iconPath?.let { path ->
+                        val file = File(context.filesDir, path)
+                        if (file.exists()) {
+                            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(48.dp) // круглый аватар
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Log.e("ExerciseChangeWindow", "Файл иконки не найден: ${file.absolutePath}")
+                        }
+                    }
                 }
+                Text(workout.name, modifier = Modifier.weight(1f))
+                ButtonMore(menuOffset, isMenuVisible, workout)
             }
             HorizontalDivider()
         }
     }
-    if (showMenu.value) {
-        ActionMenu(changeWorkoutClick, onDismiss = { showMenu.value = false })
-    }
 }
 
 @Composable
-fun ActionMenu(changeWorkoutClick: (Long) -> Unit,
-               onDismiss: () -> Unit, viewModel: UsedWorkoutsViewModel = viewModel()) {
+fun ButtonMore(
+    menuOffset: MutableState<Offset>,
+    isMenuVisible: MutableState<Boolean>,
+    workout: BaseWorkout,
+    viewModel: UsedWorkoutsViewModel = viewModel(),
+) {
+
+    Box(
+        modifier = Modifier
+            .onGloballyPositioned { coordinates ->
+                val position = coordinates.localToRoot(Offset.Zero)
+                menuOffset.value = position
+            }
+    ) {
+        IconButton(onClick = {
+            viewModel.setSelectedWorkout(workout)
+            isMenuVisible.value = true
+        }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun ActionMenu(
+    menuOffset: Offset,
+    changeWorkoutClick: (Long) -> Unit,
+    onDismiss: () -> Unit,
+    isChangeWindowVisible: MutableState<Boolean>,
+    viewModel: UsedWorkoutsViewModel = viewModel(),
+) {
     val selectedWorkout = viewModel.selectedWorkout.collectAsState().value
 
-    var showChangeWindow by remember { mutableStateOf(false) }
-
-    DropdownMenu(
-        expanded = true, // Меню открывается для текущего элемента
-        onDismissRequest = { onDismiss() } // Закрытие меню при клике вне
+    Popup(
+        offset = IntOffset(menuOffset.x.toInt(), menuOffset.y.toInt()),
+        onDismissRequest = onDismiss,
+        properties = PopupProperties(focusable = true)
     ) {
-        DropdownMenuItem(onClick = {
-            if (selectedWorkout != null) {
-                if (selectedWorkout.isFavourite)
-                    viewModel.removeFavouriteWorkout(selectedWorkout)
-                else {
-                    viewModel.addFavouriteWorkout(selectedWorkout)
-                }
+        Surface(
+            modifier = Modifier.wrapContentSize(),
+            tonalElevation = 4.dp,
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Column(modifier = Modifier.padding(8.dp)) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (selectedWorkout?.isFavourite == true)
+                                "Удалить из избранного"
+                            else
+                                "Добавить в избранное"
+                        )
+                    },
+                    onClick = {
+                        selectedWorkout?.let {
+                            if (it.isFavourite)
+                                viewModel.removeFavouriteWorkout(it)
+                            else
+                                viewModel.addFavouriteWorkout(it)
+                        }
+                        onDismiss()
+                    }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Изменить") },
+                    onClick = {
+                        isChangeWindowVisible.value = true
+                    }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Скрыть") },
+                    onClick = {
+                        selectedWorkout?.let { viewModel.removeWorkoutFromUsed(it) }
+                        onDismiss()
+                    }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Удалить") },
+                    onClick = {
+                        selectedWorkout?.let { viewModel.deleteWorkout(it) }
+                        onDismiss()
+                    }
+                )
             }
-        },
-            text = {
-                if (selectedWorkout != null) {
-                    if (selectedWorkout.isFavourite)
-                        Text("Удалить из избранного")
-                    else
-                        Text("Добавить в избранное")
-                }
-            })
-        DropdownMenuItem(onClick = {
-            showChangeWindow = true
-        },
-            text = { Text("Изменить") })
-        DropdownMenuItem(onClick = {
-            if (selectedWorkout != null) {
-                viewModel.removeWorkoutFromUsed(selectedWorkout)
-            }
-        },
-            text = { Text("Скрыть") })
-        DropdownMenuItem(onClick = {
-            if (selectedWorkout != null) {
-                viewModel.deleteWorkout(selectedWorkout)
-            }
-        },
-            text = { Text("Удалить") })
+        }
     }
-    if (showChangeWindow) {
+
+    if (isChangeWindowVisible.value) {
+
         if (selectedWorkout is Workout) {
             changeWorkoutClick(selectedWorkout.id)
-        }
-        else {
-            ExerciseChangeWindow(selectedWorkout as Exercise)
+        } else {
+            ExerciseChangeWindow(
+                setIsChangingExercise = { isChangeWindowVisible.value = it }
+            )
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExerciseChangeWindow(exercise: Exercise) {
+fun ExerciseChangeWindow(modifier: Modifier = Modifier, setIsChangingExercise: (Boolean) -> Unit, viewModel: UsedWorkoutsViewModel = viewModel()) {
 
+    val selected = viewModel.selectedWorkout.collectAsState().value as? Exercise
+
+
+    if (selected !is Exercise) {
+        Log.e("ExerciseChangeWindow", "Selected workout is not an Exercise")
+        return
+    }
+
+    val context = LocalContext.current
+
+    val iconLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                viewModel.saveExerciseIcon(selected, uri, context)
+            }
+        }
+    )
+
+    val videoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri: Uri? ->
+            uri?.let {
+                viewModel.saveExerciseVideo(selected, uri, context)
+            }
+        }
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = { setIsChangingExercise(false) },
+    )
+    {
+        Column {
+            NameField(selected.name)
+            if (selected.iconPath == null) {
+                Button(
+                    onClick = {
+                        iconLauncher.launch(arrayOf("image/*"))
+                    }
+                ) {
+                    Text("Добавить иконку")
+                }
+            } else {
+                selected.iconPath?.let { path ->
+                    val file = File(context.filesDir, path)
+                    if (file.exists()) {
+                        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(64.dp) // круглый аватар
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                        Button(
+                            onClick = {
+                                viewModel.deleteExerciseIcon(context, selected)
+                            }
+                        ) {
+                            Text("Удалить иконку")
+                        }
+                    } else {
+                        Log.e("ExerciseChangeWindow", "Файл иконки не найден: ${file.absolutePath}")
+                    }
+                }
+            }
+            if (selected.videoPath == null) {
+                Button(
+                    onClick = {
+                        videoLauncher.launch(arrayOf("video/*"))
+                    }
+                ) {
+                    Text("Добавить видео выполнения")
+                }
+            }
+            else {
+                val file = File(context.filesDir, selected.videoPath)
+                VideoPlayerFromFile(file)
+                Button(
+                    onClick = {
+                        viewModel.deleteExerciseVideo(context, selected)
+                    }
+                ) {
+                    Text("Удалить видео")
+                }
+            }
+            Button(onClick = {
+                setIsChangingExercise(false)
+            }) {
+                Text(text = "ОК")
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun NameField(name: String, viewModel: UsedWorkoutsViewModel = viewModel()) {
+    TextField(
+        value = name,
+        onValueChange = { name ->
+            viewModel.setExerciseName(name)
+        },
+        label = { Text("Название упражнения") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    )
 }

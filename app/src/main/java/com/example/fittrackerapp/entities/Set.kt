@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 @Entity(
@@ -25,13 +26,13 @@ import kotlinx.coroutines.withContext
     ]
 )
 data class Set(
-    @PrimaryKey(autoGenerate = true) var id: Long = 0,
-    @ColumnInfo(name = "completed_exercise_id") var completedExerciseId: Long,
-    @ColumnInfo(name = "duration") var duration: Int,
-    @ColumnInfo(name = "reps") var reps: Int,
-    @ColumnInfo(name = "weight") var weight: Double,
-    @ColumnInfo(name = "rest_duration") var restDuration: Int,
-    @ColumnInfo(name = "set_number") var setNumber: Int
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "completed_exercise_id") val completedExerciseId: Long = 0,
+    @ColumnInfo(name = "duration") val duration: Int = 0,
+    @ColumnInfo(name = "reps") val reps: Int = 0,
+    @ColumnInfo(name = "weight") val weight: Double = 0.0,
+    @ColumnInfo(name = "rest_duration") val restDuration: Int = 0,
+    @ColumnInfo(name = "set_number") val setNumber: Int = 0
 )
 
 @Dao
@@ -54,6 +55,9 @@ interface SetDao {
 
     @Query("SELECT * FROM sets WHERE completed_exercise_id = :completedExerciseId")
     suspend fun getByCompletedExerciseId(completedExerciseId: Long): List<Set>
+
+    @Query("SELECT * FROM sets WHERE completed_exercise_id = :completedExerciseId")
+    fun getByCompletedExerciseIdFlow(completedExerciseId: Long): Flow<List<Set>>
 }
 
 class SetRepository(private val dao: SetDao) {
@@ -92,6 +96,9 @@ class SetRepository(private val dao: SetDao) {
         return withContext(Dispatchers.IO) {
             dao.getByCompletedExerciseId(completedExerciseId)
         }
+    }
 
+    fun getByCompletedExerciseIdFlow(completedExerciseId: Long): Flow<List<Set>> {
+        return dao.getByCompletedExerciseIdFlow(completedExerciseId)
     }
 }

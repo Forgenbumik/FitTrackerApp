@@ -31,10 +31,10 @@ import kotlinx.coroutines.withContext
     ])
 data class LastWorkout(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long,
-    @ColumnInfo(name = "workout_name") val workoutName: String,
-    @ColumnInfo(name = "type_id") val typeId: Int,
-    @ColumnInfo val duration: Int
+    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long = 0,
+    @ColumnInfo(name = "workout_name") val workoutName: String = "",
+    @ColumnInfo(name = "type_id") val typeId: Int = 0,
+    @ColumnInfo val duration: Int = 0
 )
 
 @Dao
@@ -89,6 +89,5 @@ class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
             }
         }
         return 0
-
     }
 }

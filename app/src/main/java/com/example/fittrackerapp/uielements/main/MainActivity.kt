@@ -1,10 +1,12 @@
 package com.example.fittrackerapp.uielements.main
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
@@ -30,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
+import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.entities.Workout
@@ -64,7 +69,8 @@ class MainActivity : ComponentActivity() {
         val factory = MainScreenModelFactory(
             WorkoutsAndExercisesRepository(
                 app.appDatabase.workoutDao(),
-                app.appDatabase.exerciseDao()),
+                app.appDatabase.exerciseDao(),
+            app.appDatabase.workoutDetailDao()),
             LastWorkoutRepository(
                 app.appDatabase.lastWorkoutDao(),
                 app.appDatabase.workoutDao(),
@@ -162,11 +168,20 @@ fun FavouriteWorkoutList(
 
 @Composable
 fun FavouriteWorkoutItem(modifier: Modifier, workout: BaseWorkout, onClick: (BaseWorkout) -> Unit) {
+
     Row(
         modifier = modifier
             .clickable { onClick(workout) },
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (workout is Exercise) {
+            val bitmap = BitmapFactory.decodeFile(workout.iconPath)
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.size(128.dp)
+            )
+        }
         Text(workout.name)
     }
 }

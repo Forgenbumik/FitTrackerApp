@@ -7,9 +7,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
@@ -69,7 +73,11 @@ class CompletedWorkoutActivity: ComponentActivity()  {
 fun CompletedExerciseMainScreen(modifier: Modifier, viewModel: CompletedWorkoutViewModel = viewModel(), onExerciseClick: (CompletedExercise, String) -> Unit) {
 
     val completedExercises = viewModel.completedExercises.collectAsState().value
-    ExercisesList(completedExercises, onExerciseClick)
+    Column(
+        modifier.windowInsetsPadding(WindowInsets.statusBars)
+    ) {
+        ExercisesList(completedExercises, onExerciseClick)
+    }
 }
 
 @Composable
@@ -86,16 +94,21 @@ fun ExercisesList(completedExercises: List<CompletedExercise>, onExerciseClick: 
 fun ExerciseItem(completedExercise: CompletedExercise, onExerciseClick: (CompletedExercise, String) -> Unit, viewModel: CompletedWorkoutViewModel = viewModel()) {
 
     val exerciseName = remember {mutableStateOf("")}
+
+    val exerciseSetsNumber = remember { mutableStateOf(0) }
+
+    val exerciseTotalReps = remember { mutableStateOf(0) }
     LaunchedEffect(completedExercise.exerciseId) {
         exerciseName.value = viewModel.getExerciseName(completedExercise.exerciseId)
+        exerciseSetsNumber.value = viewModel.getExerciseSetsNumber(completedExercise.id)
+        exerciseTotalReps.value = viewModel.getExerciseTotalReps(completedExercise.id)
     }
 
     Row(modifier = Modifier.padding(8.dp).clickable { onExerciseClick(completedExercise, exerciseName.value) }) {
         Text(exerciseName.value)
         Text(" Длительность ${viewModel.formatTime(completedExercise.duration)} ")
-        Text("${completedExercise.setsNumber} подходов ")
-        Text("${completedExercise.totalReps} повторений")
+        Text("${exerciseSetsNumber.value} подходов ")
+        Text("${exerciseTotalReps.value} повторений")
     }
-
 }
 
