@@ -66,8 +66,8 @@ interface WorkoutDao {
 }
 
 class WorkoutRepository(private val dao: WorkoutDao) {
-    suspend fun insert(workout: Workout) {
-        withContext(Dispatchers.IO) {
+    suspend fun insert(workout: Workout): Long {
+        return withContext(Dispatchers.IO) {
             dao.insert(workout)
         }
     }
@@ -79,7 +79,7 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         }
     }
 
-    suspend fun getById(id: Long): Workout? {
+    suspend fun getById(id: Long): Workout {
         return withContext(Dispatchers.IO) {
             dao.getById(id)
         }

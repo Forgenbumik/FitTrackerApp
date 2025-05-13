@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingWorkoutViewModel (
@@ -211,7 +210,6 @@ class ExecutingWorkoutViewModel (
                 && workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                if (workoutCondition.value == WorkoutCondition.END) return
                 _currentSet.value = Set(0, currentExecExerciseId, setSeconds, detail.reps, 0.0, 0, i)
                 val setId = setsRepository.insert(_currentSet.value)
                 _currentSet.value = _currentSet.value.copy(id = setId)

@@ -66,7 +66,7 @@ fun CenteredPicker(
     Box(modifier = modifier.height(itemHeight * visibleItemsCount)) {
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(vertical = itemHeight * centerIndex),
+            contentPadding = PaddingValues(vertical = (itemHeight * centerIndex+25.dp)),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
