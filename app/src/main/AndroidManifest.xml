@@ -35,7 +35,7 @@
         <activity android:name=".uielements.exercise.ExerciseActivity"/>
         <activity android:name=".uielements.completedexercise.CompletedExerciseActivity"/>
         <activity android:name=".uielements.allworkouts.AllExercisesActivity"/>
-
+        <activity android:name=".uielements.executingexercise.ExecutingExerciseActivity"/>
+        <activity android:name=".uielements.completedworkouts.CompletedWorkoutsActivity"/>
     </application>
-
 </manifest>

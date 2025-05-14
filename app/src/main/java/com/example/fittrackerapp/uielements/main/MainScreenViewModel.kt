@@ -3,8 +3,13 @@ package com.example.fittrackerapp.uielements.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
+import com.example.fittrackerapp.entities.CompletedExerciseRepository
+import com.example.fittrackerapp.entities.CompletedWorkout
+import com.example.fittrackerapp.entities.CompletedWorkoutRepository
+import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +18,8 @@ import kotlinx.coroutines.launch
 
 class MainScreenViewModel(
     private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
-    private val lastWorkoutRepository: LastWorkoutRepository
+    private val lastWorkoutRepository: LastWorkoutRepository,
+    private val completedExerciseRepository: CompletedExerciseRepository
 ): ViewModel() {
 
     private val _favouriteWorkouts = MutableStateFlow<List<BaseWorkout>>(emptyList())
@@ -47,16 +53,31 @@ class MainScreenViewModel(
         val seconds = secs % 60
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
+
+    fun getIconPathByCompleted(lastWorkout: LastWorkout): String? {
+        var iconPath: String? = null
+        if (lastWorkout.typeId == 1) {
+            return iconPath
+        }
+        else {
+            viewModelScope.launch {
+                iconPath = completedExerciseRepository.getExerciseIconPath(lastWorkout.completedWorkoutId)
+            }.let {
+                return iconPath
+            }
+        }
+    }
 }
 
 class MainScreenModelFactory(
     private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
-    private val lastWorkoutRepository: LastWorkoutRepository
+    private val lastWorkoutRepository: LastWorkoutRepository,
+    private val completedExerciseRepository: CompletedExerciseRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainScreenViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainScreenViewModel(workoutsAndExercisesRepository, lastWorkoutRepository) as T
+            return MainScreenViewModel(workoutsAndExercisesRepository, lastWorkoutRepository, completedExerciseRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

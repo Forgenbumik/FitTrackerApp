@@ -43,7 +43,7 @@ class CompletedExerciseViewModel(
             loadCompletedExercise()
         }
         viewModelScope.launch {
-            setRepository.getByCompletedExerciseIdFlow(_completedExercise.value.id).collect {
+            setRepository.getByCompletedExerciseIdFlow(completedExerciseId).collect {
                 _setList = it.toMutableStateList()
             }
         }
@@ -51,10 +51,6 @@ class CompletedExerciseViewModel(
 
     suspend fun loadCompletedExercise() {
         _completedExercise.value = completedExerciseRepository.getById(completedExerciseId)
-    }
-
-    suspend fun loadSets() {
-        _setList = setRepository.getByCompletedExerciseId(completedExerciseId).toMutableStateList()
     }
 
     fun setIsChangingSet(isChangingSet: Boolean) {

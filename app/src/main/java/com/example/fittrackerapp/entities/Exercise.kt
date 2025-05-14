@@ -80,6 +80,9 @@ interface ExerciseDao {
 
     @Query("SELECT * from exercises where is_used = 0 and is_deleted = 0")
     suspend fun getNotUsed(): List<Exercise>
+
+    @Query("SELECT icon_path from exercises where id = :exerciseId")
+    suspend fun getExerciseIconPath(exerciseId: Long): String?
 }
 
 class ExerciseRepository(private val dao: ExerciseDao) {
@@ -145,6 +148,12 @@ class ExerciseRepository(private val dao: ExerciseDao) {
     suspend fun getNotUsed(): List<Exercise> {
         return withContext(Dispatchers.IO) {
             dao.getNotUsed()
+        }
+    }
+
+    suspend fun getExerciseIconPath(exerciseId: Long): String? {
+        return withContext(Dispatchers.IO) {
+            dao.getExerciseIconPath(exerciseId)
         }
     }
 }

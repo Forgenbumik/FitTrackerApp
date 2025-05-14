@@ -14,20 +14,31 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -51,10 +62,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,16 +84,22 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.example.fittrackerapp.App
+import com.example.fittrackerapp.R
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.Workout
+import com.example.fittrackerapp.ui.theme.DarkerBackground
+import com.example.fittrackerapp.ui.theme.DeepTurquoise
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
+import com.example.fittrackerapp.ui.theme.LightTurquoise
+import com.example.fittrackerapp.uielements.FileIcon
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
 import com.example.fittrackerapp.uielements.exercise.ExerciseActivity
+import com.example.fittrackerapp.uielements.main.MainActivity
 import com.example.fittrackerapp.uielements.workout.WorkoutActivity
 import java.io.File
 
@@ -94,8 +114,8 @@ class UsedWorkoutsActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(viewModel, Modifier.padding(innerPadding), ::onPlusClick,
-                        ::changeWorkoutClick, ::deleteExerciseIcon, ::onWorkoutClick)
+                    MainScreen(Modifier.padding(innerPadding), ::onBackClick, ::onPlusClick,
+                        ::changeWorkoutClick, ::onWorkoutClick)
                 }
             }
         }
@@ -141,31 +161,39 @@ class UsedWorkoutsActivity: ComponentActivity() {
         }
         startActivity(intent)
     }
+
+    fun onBackClick() {
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
-    viewModel: UsedWorkoutsViewModel = viewModel(), modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+    onBackClick: () -> Unit,
     onPlusClick: () -> Unit,
     changeWorkoutClick: (Long) -> Unit,
-    deleteExerciseIcon: (Context, Exercise) -> Unit,
-    onWorkoutClick: (BaseWorkout) -> Unit
+    onWorkoutClick: (BaseWorkout) -> Unit,
+    viewModel: UsedWorkoutsViewModel = viewModel()
 ) {
-
-    val isMenuVisible = remember { mutableStateOf(false)}
+    val isMenuVisible = remember { mutableStateOf(false) }
     val isChangeWindowVisible = remember { mutableStateOf(false) }
     val selectedWorkout = viewModel.selectedWorkout.collectAsState().value
-
     val favouriteWorkouts = viewModel.favouriteWorkouts.collectAsState().value
     val workouts = viewModel.workoutsList.collectAsState().value
-
     val menuOffset = remember { mutableStateOf(Offset.Zero) }
 
-    Column(modifier = modifier) {
-        UpperBar(onPlusClick)
-        FavouriteWorkoutsList(favouriteWorkouts, menuOffset, isMenuVisible, onWorkoutClick)
-        AllWorkoutsList(workouts, menuOffset, isMenuVisible, onWorkoutClick)
+    Column(modifier = Modifier.background(DarkerBackground)) {
+        TopBar(onBackClick = onBackClick, onPlusClick = onPlusClick)
+
+        WorkoutListContainer {
+            FavouriteWorkoutsList(favouriteWorkouts, menuOffset, isMenuVisible, onWorkoutClick)
+            Spacer(modifier = Modifier.height(8.dp))
+            AllWorkoutsList(workouts, menuOffset, isMenuVisible, onWorkoutClick)
+        }
     }
 
     if (isMenuVisible.value && selectedWorkout != null) {
@@ -179,17 +207,31 @@ fun MainScreen(
 }
 
 @Composable
-fun UpperBar(onPlusClick: () -> Unit) {
-    Row {
-        Button(modifier = Modifier,
-            onClick = {
-                onPlusClick()
-            }) {
-            Text("+",  modifier = Modifier, fontSize = 16.sp)
+fun TopBar(onPlusClick: () -> Unit, onBackClick: () -> Unit, ) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(DarkerBackground)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = onBackClick) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = Color.White)
+        }
+
+        Text(
+            text = "Мои тренировки",
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        IconButton(onClick = onPlusClick) {
+            Icon(Icons.Default.Add, contentDescription = "Добавить", tint = Color.White)
         }
     }
 }
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FavouriteWorkoutsList(
@@ -198,6 +240,9 @@ fun FavouriteWorkoutsList(
     isMenuVisible: MutableState<Boolean>,
     onWorkoutClick: (BaseWorkout) -> Unit
 ) {
+
+    val context = LocalContext.current
+
     Column {
         Text("Избранные сценарии")
         LazyColumn(
@@ -212,12 +257,14 @@ fun FavouriteWorkoutsList(
                         },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (workout is Exercise) {
-                        val bitmap = BitmapFactory.decodeFile(workout.iconPath)
+                    if (workout is Exercise && workout.iconPath != null) {
+                        FileIcon(File(context.filesDir, workout.iconPath))
+                    }
+                    else {
                         Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.size(128.dp)
+                            painter = painterResource(id = R.drawable.ic_exercise_default), // Здесь используем идентификатор ресурса
+                            contentDescription = "Иконка упражнения",
+                            modifier = Modifier.size(36.dp)
                         )
                     }
                     Text(workout.name)
@@ -251,28 +298,37 @@ fun AllWorkoutsList(
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (workout is Exercise) {
-                    workout.iconPath?.let { path ->
-                        val file = File(context.filesDir, path)
-                        if (file.exists()) {
-                            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(48.dp) // круглый аватар
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Log.e("ExerciseChangeWindow", "Файл иконки не найден: ${file.absolutePath}")
-                        }
-                    }
+                if (workout is Exercise && workout.iconPath != null) {
+                    val file = File(context.filesDir, workout.iconPath)
+                    FileIcon(file)
+                }
+                else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_exercise_default), // Здесь используем идентификатор ресурса
+                        contentDescription = "Иконка упражнения",
+                        modifier = Modifier.size(36.dp)
+                    )
                 }
                 Text(workout.name, modifier = Modifier.weight(1f))
                 ButtonMore(menuOffset, isMenuVisible, workout)
             }
             HorizontalDivider()
+        }
+    }
+}
+
+@Composable
+fun WorkoutListContainer(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 4.dp,
+        color = LightTurquoise
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            content()
         }
     }
 }

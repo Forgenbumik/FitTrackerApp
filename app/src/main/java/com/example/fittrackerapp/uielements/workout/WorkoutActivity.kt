@@ -8,19 +8,37 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.App
@@ -29,6 +47,7 @@ import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.entities.WorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutActivity
+import com.example.fittrackerapp.uielements.main.MainActivity
 
 class WorkoutActivity: ComponentActivity() {
 
@@ -44,7 +63,7 @@ class WorkoutActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CompletedExerciseMainScreen(modifier = Modifier.padding(innerPadding), workoutName, viewModel, ::onExerciseClick)
+                    MainScreen(modifier = Modifier.padding(innerPadding), workoutName, viewModel, ::onBackClick, ::onExerciseClick)
                 }
             }
         }
@@ -71,57 +90,128 @@ class WorkoutActivity: ComponentActivity() {
         val intent = Intent(this, ExecutingWorkoutActivity::class.java).apply {
             putExtra("workoutId", workoutId)
             putExtra("workoutName", workoutName)
-            putExtra("detailId", exercise.id)
+            putExtra("detailId", exercise.exerciseId)
             putExtra("exerciseName", exercise.exerciseName)
         }
         startActivity(intent)
     }
+
+    fun onBackClick() {
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
 }
 
 @Composable
-fun CompletedExerciseMainScreen(
-    modifier: Modifier,
+fun MainScreen(
+    modifier: Modifier = Modifier,
     workoutName: String,
     viewModel: WorkoutViewModel = viewModel(),
+    onBackClick: () -> Unit,
     onExerciseClick: (WorkoutDetail) -> Unit
 ) {
     val exercises = viewModel.exercisesList.collectAsState()
-    Column(modifier = modifier
-        .windowInsetsPadding(WindowInsets.statusBars)) {
-        Text(workoutName)
-        Text("Упражнения")
+
+    Column(
+        modifier = modifier
+            .background(Color(0xFF121212)) // Тёмный фон
+            .fillMaxSize()
+            .padding(WindowInsets.statusBars.asPaddingValues())
+    ) {
+        TopBar(workoutName, onBackClick)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Упражнения",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+        )
         ExerciseList(exercises.value, onExerciseClick)
     }
 }
 
 @Composable
-fun ExerciseList(exerciseList: List<WorkoutDetail>,
-                 onExerciseClick: (WorkoutDetail) -> Unit) {
-    for (exercise in exerciseList) {
-        ExerciseItem(exercise, onExerciseClick)
+fun TopBar(title: String, onBackClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1F1F1F)) // Тёмно-серый
+            .padding(horizontal = 12.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBackClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Назад",
+                tint = Color.White // Белый цвет для иконки
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
 @Composable
-fun ExerciseItem(workoutDetail: WorkoutDetail, onClick: (WorkoutDetail) -> Unit, viewModel: WorkoutViewModel = viewModel()) {
+fun ExerciseList(
+    exerciseList: List<WorkoutDetail>,
+    onExerciseClick: (WorkoutDetail) -> Unit
+) {
     Column(
         modifier = Modifier
+            .padding(horizontal = 12.dp)
     ) {
-        Text(workoutDetail.exerciseName)
+        exerciseList.forEach { exercise ->
+            ExerciseItem(exercise, onExerciseClick)
+            HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+        }
+    }
+}
+
+@Composable
+fun ExerciseItem(
+    workoutDetail: WorkoutDetail,
+    onClick: (WorkoutDetail) -> Unit,
+    viewModel: WorkoutViewModel = viewModel()
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
+            .background(Color(0xFF2C2C2C), shape = RoundedCornerShape(12.dp)) // Темный фон для элемента
+            .padding(12.dp)
+    ) {
+        Text(
+            text = workoutDetail.exerciseName,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White // Белый цвет для текста
+        )
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
-            modifier = Modifier,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Подходов: ${workoutDetail.setsNumber}, ")
-            Text("повторений: ${workoutDetail.reps}, ")
-            if (workoutDetail.isRestManually) {
-                Text("отдых: вручную")
+            Text("Подходов: ${workoutDetail.setsNumber}, ", color = Color.White)
+            Text("Повторений: ${workoutDetail.reps}, ", color = Color.White)
+            val restText = if (workoutDetail.isRestManually) {
+                "отдых: вручную"
+            } else {
+                "отдых: ${viewModel.FormatTime(workoutDetail.restDuration)}"
             }
-            else {
-                val textTime = viewModel.FormatTime(workoutDetail.restDuration)
-                Text("отдых: $textTime")
-            }
-            Button(onClick = { onClick(workoutDetail) },
-                content = { Text("Запустить") })
+            Text(restText, color = Color.White)
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = { onClick(workoutDetail) },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) // Зеленая кнопка
+        ) {
+            Text("Запустить", color = Color.White)
         }
     }
 }

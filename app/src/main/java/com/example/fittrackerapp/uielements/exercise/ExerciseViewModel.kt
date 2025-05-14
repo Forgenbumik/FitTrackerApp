@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 class ExerciseViewModel(
-    private val exerciseId: Long,
+    val exerciseId: Long,
     private val exerciseRepository: ExerciseRepository,
 ): ViewModel() {
 
@@ -26,12 +26,27 @@ class ExerciseViewModel(
     val _plannedReps = MutableStateFlow(0)
     val plannedReps: StateFlow<Int> = _plannedReps
 
+    val _plannedRestDuration = MutableStateFlow(0)
+    val plannedRestDuration: StateFlow<Int> = _plannedRestDuration
+
     init {
         viewModelScope.launch {
             exerciseRepository.getByIdFlow(exerciseId).collect {
                 _exercise.value = it
             }
         }
+    }
+
+    fun setPlannedSets(setsNum: Int) {
+        _plannedSets.value = setsNum
+    }
+
+    fun setPlannedReps(repsNum: Int) {
+        _plannedReps.value = repsNum
+    }
+
+    fun setPlannedRestDuration(duration: Int) {
+        _plannedRestDuration.value = duration
     }
 }
 

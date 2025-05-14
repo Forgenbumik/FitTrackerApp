@@ -11,19 +11,35 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -32,24 +48,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.net.toUri
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.common.MediaItem
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import com.example.fittrackerapp.App
 import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.uielements.ClickableRow
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
 import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
@@ -70,7 +82,8 @@ class AddingToUsedWorkoutsActivity: ComponentActivity() {
                     MainScreen(
                         modifier = Modifier.padding(innerPadding),
                         onAddToUsedWorkouts = { onAddToUsedWorkouts() },
-                        onCreateNewWorkout = { onCreateNewWorkout() }
+                        onCreateNewWorkout = { onCreateNewWorkout() },
+                        onBack = { finish() }
                     )
                 }
             }
@@ -84,6 +97,8 @@ class AddingToUsedWorkoutsActivity: ComponentActivity() {
 
         viewModel = ViewModelProvider(this, factory).get(AddingToUsedWorkoutsViewModel::class.java)
     }
+
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     val addExerciseLauncher = registerForActivityResult(
@@ -116,38 +131,111 @@ class AddingToUsedWorkoutsActivity: ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier, onAddToUsedWorkouts: () -> Unit, onCreateNewWorkout: () -> Unit, viewModel: AddingToUsedWorkoutsViewModel = viewModel()) {
+fun MainScreen(
+    modifier: Modifier = Modifier,
+    onAddToUsedWorkouts: () -> Unit,
+    onCreateNewWorkout: () -> Unit,
+    viewModel: AddingToUsedWorkoutsViewModel = viewModel(),
+    onBack: () -> Unit
+) {
     val isCreatingExercise = remember { mutableStateOf(false) }
 
-    Column(
-        Modifier.windowInsetsPadding(WindowInsets.statusBars)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
+            .windowInsetsPadding(WindowInsets.statusBars)
     ) {
-        ClickableRow("Добавить упражнение из списка", onAddToUsedWorkouts)
-        ClickableRow("Создать упражнение", onClick = { isCreatingExercise.value = true })
-        ClickableRow("Добавить сценарий тренировки", onCreateNewWorkout)
-    }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 🔙 Кнопка назад
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Назад",
+                    tint = Color.White
+                )
+            }
 
-    if (isCreatingExercise.value) {
-        AddingExerciseDialogWindow(modifier = Modifier, setIsCreatingExercise = {showSheet -> isCreatingExercise.value = showSheet})
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Меню упражнений",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1B9AAA), // Яркий бирюзово-синий
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            ActionCard(
+                text = "Добавить упражнение из списка",
+                color = Color(0xFF1B9AAA),
+                onClick = onAddToUsedWorkouts
+            )
+
+            ActionCard(
+                text = "Создать упражнение",
+                color = Color(0xFF007D8A),
+                onClick = { isCreatingExercise.value = true }
+            )
+
+            ActionCard(
+                text = "Добавить сценарий тренировки",
+                color = Color(0xFFFFA500),
+                onClick = onCreateNewWorkout
+            )
+        }
+
+        if (isCreatingExercise.value) {
+            AddingExerciseDialogWindow(
+                modifier = Modifier,
+                setIsCreatingExercise = { isCreatingExercise.value = it }
+            )
+        }
+    }
+}
+
+@Composable
+fun ActionCard(text: String, color: Color, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .shadow(4.dp, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = color),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddingExerciseDialogWindow(modifier: Modifier, viewModel: AddingToUsedWorkoutsViewModel = viewModel(), setIsCreatingExercise: (Boolean) -> Unit) {
-
+fun AddingExerciseDialogWindow(
+    modifier: Modifier = Modifier,
+    viewModel: AddingToUsedWorkoutsViewModel = viewModel(),
+    setIsCreatingExercise: (Boolean) -> Unit
+) {
     val addingExercise = viewModel.addingExercise.collectAsState().value
-
     val context = LocalContext.current
 
     val iconLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
             uri?.let {
-                if (addingExercise != null) {
-                    viewModel.saveExerciseIcon(addingExercise, uri, context)
-                }
+                addingExercise?.let { viewModel.saveExerciseIcon(it, uri, context) }
             }
         }
     )
@@ -156,79 +244,111 @@ fun AddingExerciseDialogWindow(modifier: Modifier, viewModel: AddingToUsedWorkou
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
             uri?.let {
-                if (addingExercise != null) {
-                    viewModel.saveExerciseVideo(addingExercise, uri, context)
-                }
+                addingExercise?.let { viewModel.saveExerciseVideo(it, uri, context) }
             }
         }
     )
 
-    ModalBottomSheet(onDismissRequest = { setIsCreatingExercise(false) },
-        )
-    {
-        Column {
+    ModalBottomSheet(
+        onDismissRequest = { setIsCreatingExercise(false) },
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Новое упражнение",
+                fontSize = 22.sp,
+                color = Color(0xFF007D8A), // Бирюзово-синий
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             NameField()
-            if (addingExercise?.iconPath == null) {
-                Button(
-                    onClick = {
-                        iconLauncher.launch(arrayOf("image/*"))
-                    }
-                ) {
-                    Text("Добавить иконку")
-                }
-            }
-            else {
-                val file = addingExercise?.iconPath?.let { File(context.filesDir, it) }
-                val bitmap = BitmapFactory.decodeFile(file?.absolutePath)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Иконка упражнения", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(8.dp))
 
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.size(128.dp).aspectRatio(2f)
-                )
-                Button(
-                    onClick = {
-                        if (addingExercise != null) {
-                            viewModel.deleteExerciseIcon(context, addingExercise)
+                    if (addingExercise?.iconPath == null) {
+                        OutlinedButton(
+                            onClick = { iconLauncher.launch(arrayOf("image/*")) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF007D8A))
+                        ) {
+                            Text("Добавить иконку")
+                        }
+                    } else {
+                        val file = File(context.filesDir, addingExercise.iconPath!!)
+                        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(128.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, Color.Gray)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { viewModel.deleteExerciseIcon(context, addingExercise) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                        ) {
+                            Text("Удалить иконку")
                         }
                     }
-                ) {
-                    Text("Удалить иконку")
-                }
-            }
-            if (addingExercise?.videoPath == null) {
-                Button(
-                    onClick = {
-                        videoLauncher.launch(arrayOf("video/*"))
-                    }
-                ) {
-                    Text("Добавить видео выполнения")
-                }
-            }
-            else {
-                val file = addingExercise.videoPath?.let { File(context.filesDir, it) }
-                if (file != null) {
-                    VideoPlayerFromFile(file)
-                }
-                Button(
-                    onClick = {
-                        viewModel.deleteExerciseVideo(context, addingExercise)
-                    }
-                ) {
-                    Text("Удалить видео")
                 }
             }
 
+            // 🎥 Видео
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Видео выполнения", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(8.dp))
 
-            Button(onClick = {
-                if (viewModel.createNewExercise()) {
-                    setIsCreatingExercise(false)
+                    if (addingExercise?.videoPath == null) {
+                        OutlinedButton(
+                            onClick = { videoLauncher.launch(arrayOf("video/*")) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF007D8A))
+                        ) {
+                            Text("Добавить видео")
+                        }
+                    } else {
+                        val file = File(context.filesDir, addingExercise.videoPath!!)
+                        VideoPlayerFromFile(file)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { viewModel.deleteExerciseVideo(context, addingExercise) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                        ) {
+                            Text("Удалить видео")
+                        }
+                    }
                 }
-            }) {
-                Text(text = "ОК")
+            }
+
+            // ✅ Подтвердить
+            Button(
+                onClick = {
+                    if (viewModel.createNewExercise()) {
+                        setIsCreatingExercise(false)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007D8A))
+            ) {
+                Text("Сохранить", color = Color.White, fontSize = 18.sp)
             }
         }
-
     }
 }
 

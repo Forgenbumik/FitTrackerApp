@@ -37,7 +37,6 @@ class ExecutingExerciseViewModel(
 
     var exercise = Exercise()
 
-
     @RequiresApi(Build.VERSION_CODES.O)
     var completedExercise = CompletedExercise()
 
@@ -103,18 +102,6 @@ class ExecutingExerciseViewModel(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runExercise() {
-
-        exerciseJob?.cancel()
-        exerciseJob = viewModelScope.launch {
-            workoutCondition.collectLatest { condition ->
-                when (condition) {
-                    WorkoutCondition.SET, WorkoutCondition.REST -> runExerciseTimer()
-                    WorkoutCondition.PAUSE -> waitForResume()
-                    WorkoutCondition.END -> return@collectLatest
-                    else -> Unit
-                }
-            }
-        }
         completedExercise = CompletedExercise(exerciseId = exerciseId)
         completedExerciseId = completedExerciseRepository.insert(completedExercise)
         completedExercise = completedExercise.copy(id = completedExerciseId)

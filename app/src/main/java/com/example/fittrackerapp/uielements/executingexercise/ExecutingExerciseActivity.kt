@@ -13,18 +13,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -51,7 +58,6 @@ import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
-import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
@@ -62,7 +68,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 
-class ExecutingWorkoutActivity : ComponentActivity() {
+class ExecutingExerciseActivity : ComponentActivity() {
     private lateinit var viewModel: ExecutingExerciseViewModel
 
     private var exerciseName = ""
@@ -87,12 +93,12 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
         val app = application as App
 
-        val exerciseid = intent.getLongExtra("workoutId", -1)
+        val exerciseId = intent.getLongExtra("exerciseId", -1)
         val plannedSets = intent.getIntExtra("plannedSets", 0)
         val plannedReps = intent.getIntExtra("plannedReps", 0)
         val plannedRestDuration = intent.getIntExtra("plannedRestDuration", 0)
 
-        if (exerciseid == -1L) {
+        if (exerciseId == -1L) {
             Log.e("ExecutingExerciseActivity", "Ошибка: exerciseId не передан в Intent!")
         }
 
@@ -101,7 +107,7 @@ class ExecutingWorkoutActivity : ComponentActivity() {
         val completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
         val lastWorkoutRepository = LastWorkoutRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
 
-        val factory = ExecutingExerciseViewModelFactory(exerciseid, plannedSets, plannedReps, plannedRestDuration, exerciseRepository, completedExerciseRepository, setsRepository, lastWorkoutRepository)
+        val factory = ExecutingExerciseViewModelFactory(exerciseId, plannedSets, plannedReps, plannedRestDuration, exerciseRepository, completedExerciseRepository, setsRepository, lastWorkoutRepository)
 
         viewModel = ViewModelProvider(this, factory).get(ExecutingExerciseViewModel::class.java)
     }
@@ -221,15 +227,15 @@ fun SetsTableHeaders() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.LightGray)
-            .padding(8.dp)) {
-
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .padding(vertical = 8.dp, horizontal = 12.dp)
+    ) {
         val modifier = Modifier.weight(1f)
-        Text("Подход", modifier = modifier, textAlign = TextAlign.Center)
-        Text("Повт.", modifier = modifier, textAlign = TextAlign.Center)
-        Text("Вес", modifier = modifier, textAlign = TextAlign.Center)
-        Text("Время", modifier = modifier, textAlign = TextAlign.Center)
-        Text("Изменить", modifier = modifier, textAlign = TextAlign.Center)
+        Text("Подход", modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
+        Text("Повт.", modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
+        Text("Вес", modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
+        Text("Время", modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
+        Text("Изменить", modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -276,38 +282,51 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingExerciseViewModel = viewModel()) {
+    ModalBottomSheet(onDismissRequest = { isShowChangeWindow.value = false }) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text("Изменение подхода", style = MaterialTheme.typography.titleMedium)
 
-    ModalBottomSheet(
-        onDismissRequest = { isShowChangeWindow.value = false }
-    ) {
-        Column {
-            Row {
-                Text("Повторения")
-                Text("Вес")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Повторения", style = MaterialTheme.typography.bodyMedium)
+                Text("Вес (кг)", style = MaterialTheme.typography.bodyMedium)
             }
 
             var selectedRepsNumber = set.reps
-
             var selectedWeight = set.weight
-            Column {
-                Row {
-                    val modifier = Modifier.weight(0.5f)
-                    ListNumberReps(modifier, set.reps, onItemSelected = { selectedItem ->
-                        selectedRepsNumber = selectedItem
-                    })
-                    ListWeight(modifier, selectedWeight.toInt(), (selectedWeight - selectedWeight.toInt()).toInt(),
-                        onItemSelected = { selectedInteger, selectedDecimal -> selectedWeight = selectedInteger + selectedDecimal.toDouble() / 10 })
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ListNumberReps(Modifier.weight(1f), set.reps) { selectedItem ->
+                    selectedRepsNumber = selectedItem
                 }
 
-                Button(
-                    onClick = {
-                        viewModel.updateSet(set, selectedRepsNumber, selectedWeight)
-                        isShowChangeWindow.value = false
-                        viewModel.setChangingSet(null)
-                    }
-                ) {
-                    Text("ОК")
+                Spacer(modifier = Modifier.width(8.dp))
+
+                ListWeight(Modifier.weight(1f), selectedWeight.toInt(), ((selectedWeight - selectedWeight.toInt()) * 10).toInt()) {
+                        selectedInt, selectedDecimal ->
+                    selectedWeight = selectedInt + selectedDecimal.toDouble() / 10
                 }
+            }
+
+            Button(
+                onClick = {
+                    viewModel.updateSet(set, selectedRepsNumber, selectedWeight)
+                    isShowChangeWindow.value = false
+                    viewModel.setChangingSet(null)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Сохранить")
             }
         }
     }
@@ -315,57 +334,43 @@ fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewMod
 
 @Composable
 fun ListNumberReps(modifier: Modifier, reps: Int, onItemSelected: (Int) -> Unit) {
-
     val numberList = (0..100).toList()
-
     CenteredPicker(items = numberList, selectedIndex = reps, onItemSelected = onItemSelected, modifier = modifier)
 }
 
 @Composable
 fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSelected: (Int, Int) -> Unit) {
     val weightList = (0..500).toList()
-    val weightDecimals = (0..9).toList()
-
+    val decimalList = (0..9).toList()
     var integerWeight = integerPart
-
     var decimalWeight = decimalPart
 
-    Row(modifier = modifier, horizontalArrangement = Arrangement.Center) {
-        CenteredPicker(weightList, selectedIndex = integerPart, onItemSelected = { selectedInteger ->
-            integerWeight = selectedInteger
-            onItemSelected(integerWeight, decimalWeight)
-        }, modifier = modifier)
-        Text(".")
-        CenteredPicker(weightDecimals, selectedIndex = decimalPart, onItemSelected = { selectedDecimal ->
-            decimalWeight = selectedDecimal
-            onItemSelected(integerWeight, decimalWeight)
-        }, modifier = modifier)
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CenteredPicker(
+            items = weightList,
+            selectedIndex = integerWeight,
+            onItemSelected = {
+                integerWeight = it
+                onItemSelected(integerWeight, decimalWeight)
+            },
+            modifier = Modifier.weight(1f)
+        )
+        Text(".", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 4.dp))
+        CenteredPicker(
+            items = decimalList,
+            selectedIndex = decimalWeight,
+            onItemSelected = {
+                decimalWeight = it
+                onItemSelected(integerWeight, decimalWeight)
+            },
+            modifier = Modifier.weight(1f)
+        )
     }
 }
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun ExerciseInformation(nextExercise: State<WorkoutDetail>, stringRestTime: State<String>, formatTime: (Int) -> String) {
-
-    val nextExerciseValue = nextExercise.value
-
-    val stringRestTimeValue = stringRestTime.value
-
-    Column {
-        Text("Отдых: ${stringRestTimeValue}$")
-
-        Text(nextExerciseValue.exerciseName)
-        if (nextExerciseValue.isRestManually) {
-            Text("${nextExerciseValue.setsNumber} подходов, ${ nextExerciseValue.reps } повт., отдых: вручную")
-        }
-        else {
-            Text("${nextExerciseValue.setsNumber} подходов, " +
-                    "${ nextExerciseValue.reps } повт., " +
-                    "отдых: ${formatTime(nextExerciseValue.restDuration)}")
-        }
-    }
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
@@ -377,33 +382,37 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
     Box(
         modifier = Modifier
             .fillMaxSize() // Заполняем весь экран
-            .padding(16.dp) // Добавляем отступы, если нужно
+            .padding(16.dp).background(Color.Gray) // Добавляем отступы, если нужно
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.5f)
-                .background(Color.Gray)
-                .align(Alignment.BottomCenter) // Размещаем внизу экрана
+                .background(Color(0xFF1C1C1E), RoundedCornerShape(20.dp)) // Тёмный фон и скругление
+                .align(Alignment.BottomCenter)
+                .padding(12.dp) // Размещаем внизу экрана
         ) {
-            val modifier = Modifier.weight(1f)
+            val buttonModifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(horizontal = 4.dp)
             if (workoutCondition == WorkoutCondition.SET
                 || lastCondition == WorkoutCondition.SET
                 && workoutCondition == WorkoutCondition.PAUSE) { //если сейчас подход
-                FirstSetButtons(modifier = modifier, stringSetTime, setCondition, isShowChangeWindow)
+                FirstSetButtons(modifier = buttonModifier, stringSetTime, setCondition, isShowChangeWindow)
             }
             else if (workoutCondition == WorkoutCondition.REST
                 || lastCondition == WorkoutCondition.REST
                 && workoutCondition == WorkoutCondition.PAUSE) {//если сейчас отдых после подхода
-                RestButtons(stringRestTime, setCondition, modifier = modifier)
+                RestButtons(stringRestTime, setCondition, modifier = buttonModifier)
             }
 
             if (workoutCondition == WorkoutCondition.SET
                 || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                 || workoutCondition == WorkoutCondition.REST) { //все кроме паузы (кнопки пауза, далее)
-                SecondSetButtons(workoutCondition, lastCondition, setCondition, modifier = modifier)
+                SecondSetButtons(workoutCondition, lastCondition, setCondition, modifier = buttonModifier)
             } else if (workoutCondition == WorkoutCondition.PAUSE) { //если сейчас пауза (кнопки продолжить, завершить)
-                PauseButtons(lastCondition, setCondition, modifier = modifier, onEndClick = onEndClick)
+                PauseButtons(lastCondition, setCondition, modifier = buttonModifier, onEndClick = onEndClick)
             }
         }
     }
@@ -413,106 +422,143 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun FirstSetButtons(modifier: Modifier, stringSetTime: State<String>, setCondition: (WorkoutCondition) -> Unit,
-                    isShowChangeWindow: MutableState<Boolean>
+fun FirstSetButtons(
+    modifier: Modifier,
+    stringSetTime: State<String>,
+    setCondition: (WorkoutCondition) -> Unit,
+    isShowChangeWindow: MutableState<Boolean>
 ) {
-
     val stringSetTimeValue = stringSetTime.value
 
-    Row(modifier = modifier) {
-        Button(onClick = {
-            setCondition(WorkoutCondition.REST)
-            isShowChangeWindow.value = true
-        }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text("Конец подхода")
-        }
-        Button(onClick = { }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text(stringSetTimeValue)
-        }
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LargeButton(
+            text = "Конец подхода",
+            onClick = {
+                setCondition(WorkoutCondition.REST)
+                isShowChangeWindow.value = true
+            },
+            modifier = Modifier.weight(1f)
+        )
+        LargeButton(
+            text = stringSetTimeValue,
+            onClick = { },
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun RestButtons(stringRestTime: State<String>, setCondition: (WorkoutCondition) -> Unit, modifier: Modifier) {
-
+fun RestButtons(
+    stringRestTime: State<String>,
+    setCondition: (WorkoutCondition) -> Unit,
+    modifier: Modifier
+) {
     val stringRestTimeValue = stringRestTime.value
 
-    Row(modifier = modifier) {
-        Button(onClick = {
-            setCondition(WorkoutCondition.SET)
-        }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text("След. подход")
-        }
-        Button(onClick = { }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text("Отдых: $stringRestTimeValue")
-        }
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LargeButton(
+            text = "След. подход",
+            onClick = { setCondition(WorkoutCondition.SET) },
+            modifier = Modifier.weight(1f)
+        )
+        LargeButton(
+            text = "Отдых: $stringRestTimeValue",
+            onClick = { },
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SecondSetButtons(workoutCondition: WorkoutCondition, lastCondition: WorkoutCondition, setCondition: (WorkoutCondition) -> Unit, modifier: Modifier) {
-
-    Row(modifier = modifier) {
-
-        Button(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight(), onClick = {
-            setCondition(WorkoutCondition.PAUSE)
-        }) {
-            Text("Пауза")
-        }
-        Button(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight(),
+fun SecondSetButtons(
+    workoutCondition: WorkoutCondition,
+    lastCondition: WorkoutCondition,
+    setCondition: (WorkoutCondition) -> Unit,
+    modifier: Modifier
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LargeButton(
+            text = "Пауза",
+            onClick = { setCondition(WorkoutCondition.PAUSE) },
+            modifier = Modifier.weight(1f)
+        )
+        LargeButton(
+            text = "Далее",
             onClick = {
-                if (workoutCondition == WorkoutCondition.SET
-                    || workoutCondition == WorkoutCondition.REST
-                    || workoutCondition == WorkoutCondition.PAUSE
-                    && (lastCondition == WorkoutCondition.SET || lastCondition == WorkoutCondition.REST)) {
+                if ((workoutCondition == WorkoutCondition.SET
+                            || workoutCondition == WorkoutCondition.REST
+                            || workoutCondition == WorkoutCondition.PAUSE)
+                    && (lastCondition == WorkoutCondition.SET || lastCondition == WorkoutCondition.REST)
+                ) {
                     setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-                }
-                else if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
+                } else if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
                     setCondition(WorkoutCondition.SET)
                 }
-            }) {
-            Text("Далее")
-        }
+            },
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PauseButtons(lastCondition: WorkoutCondition,
-                 setCondition: (WorkoutCondition) -> Unit,
-                 modifier: Modifier, onEndClick: () -> Unit) {
-
-    Row(modifier = modifier) {
-
-        Button(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight(), onClick = {
-            setCondition(lastCondition)
-        }) {
-            Text("Продолжить")
-        }
-        Button(
+fun PauseButtons(
+    lastCondition: WorkoutCondition,
+    setCondition: (WorkoutCondition) -> Unit,
+    modifier: Modifier,
+    onEndClick: () -> Unit
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        LargeButton(
+            text = "Продолжить",
+            onClick = { setCondition(lastCondition) },
+            modifier = Modifier.weight(1f)
+        )
+        LargeButton(
+            text = "Завершить",
             onClick = {
                 setCondition(WorkoutCondition.END)
                 onEndClick()
             },
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) { Text("Завершить") }
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.error,
+            textColor = MaterialTheme.colorScheme.onError
+        )
+    }
+}
+
+@Composable
+fun LargeButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFF2C2C2E),
+    textColor: Color = Color.White
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(horizontal = 4.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color,
+            contentColor = textColor
+        ),
+        elevation = null, // Убираем тень
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = textColor
+            )
+        )
     }
 }

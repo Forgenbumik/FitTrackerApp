@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 class DateTimeConverter {
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss") // Измененный формат
+    private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     @RequiresApi(Build.VERSION_CODES.O)
     @TypeConverter

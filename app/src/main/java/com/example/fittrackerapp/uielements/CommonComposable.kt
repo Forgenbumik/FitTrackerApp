@@ -1,5 +1,8 @@
 package com.example.fittrackerapp.uielements
 
+import android.graphics.BitmapFactory
+import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,18 +12,28 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -82,13 +95,12 @@ fun CenteredPicker(
             }
         }
 
-        // Overlay для выделения центра
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxWidth()
                 .height(itemHeight)
-                .background(Color.LightGray.copy(alpha = 0.2f))
+                .background(Color(0xFF1B9AAA).copy(alpha = 0.2f))
         )
     }
 }
@@ -98,7 +110,7 @@ fun CenteredListItem(onItemSelected: (Int) -> Unit, item: Int, isSelected: Boole
     Text(
         text = "$item",
         fontSize = if (isSelected) 24.sp else 16.sp,
-        color = if (isSelected) Color.Black else Color.Gray,
+        color = if (isSelected) Color.White else Color.Gray,
         modifier = Modifier
             .height(itemHeight)
             .fillMaxWidth()
@@ -137,4 +149,21 @@ fun VideoPlayerFromFile(file: File) {
             .aspectRatio(16f / 9f) // Устанавливаем нужное соотношение
             .clipToBounds()
     )
+}
+
+@Composable
+fun FileIcon(file: File) {
+    if (file.exists()) {
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier
+                .size(36.dp) // круглый аватар
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Log.e("ExerciseChangeWindow", "Файл иконки не найден: ${file.absolutePath}")
+    }
 }

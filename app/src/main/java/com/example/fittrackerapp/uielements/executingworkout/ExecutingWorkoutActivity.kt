@@ -15,18 +15,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -198,7 +204,6 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
     val changingSet = viewModel.changingSet.collectAsState()
     Column(modifier = modifier) {
         Text(workoutName)
-        Text(stringWorkoutTime)
         if (currentExercise != null) {
             Text(currentExercise.name)
         }
@@ -393,142 +398,183 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
     Box(
         modifier = Modifier
             .fillMaxSize() // Заполняем весь экран
-            .padding(16.dp) // Добавляем отступы, если нужно
+            .padding(16.dp)
+            .background(Color(0xFF18181A))// Добавляем отступы, если нужно
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.5f)
-                .background(Color.Gray)
-                .align(Alignment.BottomCenter) // Размещаем внизу экрана
+                .background(Color(0xFF1C1C1E), RoundedCornerShape(20.dp)) // Тёмный фон и скругление
+                .align(Alignment.BottomCenter)
+                .padding(12.dp) // Размещаем внизу экрана
         ) {
-            val modifier = Modifier.weight(1f)
-            if (workoutCondition == WorkoutCondition.SET
-                || lastCondition == WorkoutCondition.SET
-                && workoutCondition == WorkoutCondition.PAUSE) { //если сейчас подход
-                FirstSetButtons(modifier = modifier, stringSetTime, setCondition, isShowChangeWindow)
-            }
-            else if (workoutCondition == WorkoutCondition.REST
-                || lastCondition == WorkoutCondition.REST
-                && workoutCondition == WorkoutCondition.PAUSE) {//если сейчас отдых после подхода
-                RestButtons(stringRestTime, setCondition, modifier = modifier)
-            }
+            val buttonModifier = Modifier
+        .fillMaxWidth()
+        .weight(1f)
+        .padding(horizontal = 4.dp)
 
-            if (workoutCondition == WorkoutCondition.SET
-                || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
-                || workoutCondition == WorkoutCondition.REST) { //все кроме паузы (кнопки пауза, далее)
-                SecondSetButtons(workoutCondition, lastCondition, setCondition, modifier = modifier)
-            } else if (workoutCondition == WorkoutCondition.PAUSE) { //если сейчас пауза (кнопки продолжить, завершить)
-                PauseButtons(lastCondition, setCondition, modifier = modifier, onEndClick = onEndClick)
-            }
+        if (workoutCondition == WorkoutCondition.SET
+            || (lastCondition == WorkoutCondition.SET && workoutCondition == WorkoutCondition.PAUSE)) {
+            FirstSetButtons(modifier = buttonModifier, stringSetTime, setCondition, isShowChangeWindow)
+        } else if (workoutCondition == WorkoutCondition.REST
+            || (lastCondition == WorkoutCondition.REST && workoutCondition == WorkoutCondition.PAUSE)) {
+            RestButtons(stringRestTime, setCondition, modifier = buttonModifier)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp)) // Отступ между рядами
+
+        if (workoutCondition == WorkoutCondition.SET
+            || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
+            || workoutCondition == WorkoutCondition.REST) {
+            SecondSetButtons(workoutCondition, lastCondition, setCondition, modifier = buttonModifier)
+        } else if (workoutCondition == WorkoutCondition.PAUSE) {
+            PauseButtons(lastCondition, setCondition, modifier = buttonModifier, onEndClick = onEndClick)
         }
     }
-
-
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun FirstSetButtons(modifier: Modifier, stringSetTime: State<String>, setCondition: (WorkoutCondition) -> Unit,
-                    isShowChangeWindow: MutableState<Boolean>
+fun FirstSetButtons(
+    modifier: Modifier,
+    stringSetTime: State<String>,
+    setCondition: (WorkoutCondition) -> Unit,
+    isShowChangeWindow: MutableState<Boolean>
 ) {
-
     val stringSetTimeValue = stringSetTime.value
 
-    Row(modifier = modifier) {
-        Button(onClick = {
-            setCondition(WorkoutCondition.REST)
-            isShowChangeWindow.value = true
-        }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text("Конец подхода")
-        }
-        Button(onClick = { }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text(stringSetTimeValue)
-        }
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "Конец подхода",
+            onClick = {
+                setCondition(WorkoutCondition.REST)
+                isShowChangeWindow.value = true
+            },
+            modifier = Modifier.weight(1f)
+        )
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = stringSetTimeValue,
+            onClick = { },
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun RestButtons(stringRestTime: State<String>, setCondition: (WorkoutCondition) -> Unit, modifier: Modifier) {
-
+fun RestButtons(
+    stringRestTime: State<String>,
+    setCondition: (WorkoutCondition) -> Unit,
+    modifier: Modifier
+) {
     val stringRestTimeValue = stringRestTime.value
 
-    Row(modifier = modifier) {
-        Button(onClick = {
-            setCondition(WorkoutCondition.SET)
-        }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text("След. подход")
-        }
-        Button(onClick = { }, modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()) {
-            Text("Отдых: $stringRestTimeValue")
-        }
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "След. подход",
+            onClick = { setCondition(WorkoutCondition.SET) },
+            modifier = Modifier.weight(1f)
+        )
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "Отдых: $stringRestTimeValue",
+            onClick = { },
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SecondSetButtons(workoutCondition: WorkoutCondition, lastCondition: WorkoutCondition, setCondition: (WorkoutCondition) -> Unit, modifier: Modifier) {
-
-    Row(modifier = modifier) {
-
-        Button(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight(), onClick = {
-            setCondition(WorkoutCondition.PAUSE)
-        }) {
-            Text("Пауза")
-        }
-        Button(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight(),
+fun SecondSetButtons(
+    workoutCondition: WorkoutCondition,
+    lastCondition: WorkoutCondition,
+    setCondition: (WorkoutCondition) -> Unit,
+    modifier: Modifier
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "Пауза",
+            onClick = { setCondition(WorkoutCondition.PAUSE) },
+            modifier = Modifier.weight(1f)
+        )
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "Далее",
             onClick = {
-                if (workoutCondition == WorkoutCondition.SET
-                    || workoutCondition == WorkoutCondition.REST
-                    || workoutCondition == WorkoutCondition.PAUSE
-                    && (lastCondition == WorkoutCondition.SET || lastCondition == WorkoutCondition.REST)) {
+                if ((workoutCondition == WorkoutCondition.SET
+                            || workoutCondition == WorkoutCondition.REST
+                            || workoutCondition == WorkoutCondition.PAUSE)
+                    && (lastCondition == WorkoutCondition.SET || lastCondition == WorkoutCondition.REST)
+                ) {
                     setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-                }
-                else if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
+                } else if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
                     setCondition(WorkoutCondition.SET)
                 }
-            }) {
-            Text("Далее")
-        }
+            },
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PauseButtons(lastCondition: WorkoutCondition,
-                 setCondition: (WorkoutCondition) -> Unit,
-                 modifier: Modifier, onEndClick: () -> Unit) {
-
-    Row(modifier = modifier) {
-
-        Button(modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight(), onClick = {
-            setCondition(lastCondition)
-        }) {
-            Text("Продолжить")
-        }
-        Button(
+fun PauseButtons(
+    lastCondition: WorkoutCondition,
+    setCondition: (WorkoutCondition) -> Unit,
+    modifier: Modifier,
+    onEndClick: () -> Unit
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "Продолжить",
+            onClick = { setCondition(lastCondition) },
+            modifier = Modifier.weight(1f)
+        )
+        com.example.fittrackerapp.uielements.executingexercise.LargeButton(
+            text = "Завершить",
             onClick = {
                 setCondition(WorkoutCondition.END)
                 onEndClick()
             },
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) { Text("Завершить") }
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.error,
+            textColor = MaterialTheme.colorScheme.onError
+        )
+    }
+}
+
+
+@Composable
+fun LargeButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFF2C2C2E),
+    textColor: Color = Color.White
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(horizontal = 4.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color,
+            contentColor = textColor
+        ),
+        elevation = null, // Убираем тень
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = textColor
+            )
+        )
     }
 }

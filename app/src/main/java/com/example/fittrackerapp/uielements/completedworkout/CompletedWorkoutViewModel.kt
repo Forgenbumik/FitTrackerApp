@@ -5,10 +5,12 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
 import com.example.fittrackerapp.entities.CompletedWorkout
 import com.example.fittrackerapp.entities.CompletedWorkoutRepository
+import com.example.fittrackerapp.entities.LastWorkout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -78,6 +80,25 @@ class CompletedWorkoutViewModel(
                 totalReps += completedExerciseRepository.getTotalReps(completedExercise.id)
             }
         }.let { return totalReps }
+    }
+
+    fun getIconPathByCompleted(baseCompletedWorkout: BaseCompletedWorkout): String? {
+        var iconPath: String? = null
+        if (baseCompletedWorkout is CompletedWorkout) {
+            return iconPath
+        } else if (baseCompletedWorkout is CompletedExercise) {
+            viewModelScope.launch {
+                iconPath =
+                    completedExerciseRepository.getExerciseIconPath(baseCompletedWorkout.exerciseId)
+            }.let {
+                return iconPath
+            }
+        }
+        return null
+    }
+
+    fun setWorkoutNotes(notes: String) {
+        _completedWorkout.value = _completedWorkout.value.copy(notes = notes)
     }
 }
 
