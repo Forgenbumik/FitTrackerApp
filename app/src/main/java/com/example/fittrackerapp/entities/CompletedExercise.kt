@@ -80,6 +80,12 @@ interface CompletedExerciseDao {
 
     @Query("SELECT SUM(reps) from sets WHERE completed_exercise_id = :exerciseId")
     suspend fun getTotalReps(exerciseId: Long): Int
+
+    @Query("SELECT icon_path FROM exercises WHERE id = ( SELECT exercise_id FROM completed_exercises WHERE id = :completedExerciseId)")
+    suspend fun getExerciseIconPath(completedExerciseId: Long): String?
+
+    @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = null")
+    suspend fun getSeparateCompleted(): List<CompletedExercise>
 }
 
 class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
@@ -87,6 +93,12 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
     suspend fun insert(completedExercise: CompletedExercise): Long {
         return withContext(Dispatchers.IO) {
             dao.insert(completedExercise)
+        }
+    }
+
+    suspend fun getExerciseIconPath(completedExerciseId: Long): String? {
+        return withContext(Dispatchers.IO) {
+            dao.getExerciseIconPath(completedExerciseId)
         }
     }
 
@@ -139,7 +151,7 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
     suspend fun getExerciseName(exerciseId: Long): String {
         return withContext(Dispatchers.IO) {
             val exercise = dao.getExerciseById(exerciseId)
-            exercise?.name ?: ""
+            exercise.name
         }
     }
 }
