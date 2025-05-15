@@ -64,22 +64,20 @@ class CompletedWorkoutViewModel(
         return _completedExercises.value.size
     }
 
-    fun getWorkoutTotalSets(): Int {
+    suspend fun getWorkoutTotalSets(): Int {
         var totalSets = 0
-        viewModelScope.launch {
-            for (completedExercise in _completedExercises.value) {
-                totalSets += completedExerciseRepository.getSetsNumber(completedExercise.id)
-            }
-        }.let { return totalSets }
+        for (completedExercise in _completedExercises.value) {
+            totalSets += completedExerciseRepository.getSetsNumber(completedExercise.id)
+        }
+        return totalSets
     }
 
-    fun getWorkoutTotalReps(): Int {
+    suspend fun getWorkoutTotalReps(): Int {
         var totalReps = 0
-        viewModelScope.launch {
-            for (completedExercise in _completedExercises.value) {
-                totalReps += completedExerciseRepository.getTotalReps(completedExercise.id)
-            }
-        }.let { return totalReps }
+        for (completedExercise in _completedExercises.value) {
+            totalReps += completedExerciseRepository.getTotalReps(completedExercise.id)
+        }
+        return totalReps
     }
 
     fun getIconPathByCompleted(baseCompletedWorkout: BaseCompletedWorkout): String? {

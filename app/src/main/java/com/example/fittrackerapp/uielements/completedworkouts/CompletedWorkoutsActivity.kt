@@ -45,6 +45,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -179,7 +182,13 @@ fun CompletedWorkoutItem(
     viewModel: CompletedWorkoutsViewModel = viewModel(),
     onCompletedWorkoutClick: (BaseCompletedWorkout) -> Unit
 ) {
-    val workoutName = viewModel.getWorkoutName(completedWorkout)
+
+
+    val workoutName = remember { mutableStateOf("") }
+
+    LaunchedEffect(completedWorkout) {
+        workoutName.value = viewModel.getWorkoutName(completedWorkout)
+    }
 
     Card(
         modifier = modifier
@@ -190,7 +199,7 @@ fun CompletedWorkoutItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = workoutName,
+                text = workoutName.value,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium
             )

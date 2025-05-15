@@ -30,18 +30,14 @@ class CompletedWorkoutsViewModel(
         }
     }
 
-    fun getWorkoutName(baseCompletedWorkout: BaseCompletedWorkout): String {
+    suspend fun getWorkoutName(baseCompletedWorkout: BaseCompletedWorkout): String {
         var workoutName = ""
 
-        if (baseCompletedWorkout !is CompletedWorkout) {
-            viewModelScope.launch {
-                workoutName = completedWorkoutRepository.getWorkoutName(baseCompletedWorkout.id)
-            }.let { return workoutName }
+        if (baseCompletedWorkout is CompletedWorkout) {
+            workoutName = completedWorkoutRepository.getWorkoutName(baseCompletedWorkout.id)
         }
         else if (baseCompletedWorkout is CompletedExercise) {
-            viewModelScope.launch {
-                workoutName = completedExerciseRepository.getExerciseName(baseCompletedWorkout.exerciseId)
-            }.let { return workoutName }
+            workoutName = completedExerciseRepository.getExerciseName(baseCompletedWorkout.exerciseId)
         }
         return workoutName
     }

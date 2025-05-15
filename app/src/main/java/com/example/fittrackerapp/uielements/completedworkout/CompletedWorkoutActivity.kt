@@ -173,21 +173,35 @@ fun MainScreen(
 @Composable
 fun WorkoutInformation(viewModel: CompletedWorkoutViewModel = viewModel()) {
     val completedWorkout = viewModel.completedWorkout.collectAsState().value
-    val formattedTime = viewModel.formatTime(completedWorkout.duration)
-    val totalExercises = viewModel.getWorkoutTotalExercises()
-    val totalSets = viewModel.getWorkoutTotalSets()
-    val totalReps = viewModel.getWorkoutTotalReps()
+    val completedExercises = viewModel.completedExercises.collectAsState().value
 
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .clip(RoundedCornerShape(12.dp))
-        .background(Color(0xFF1F1F1F))
-        .padding(12.dp)
+    val formattedTime = viewModel.formatTime(completedWorkout.duration)
+    val totalExercises = completedExercises.size
+
+    val totalSets = remember { mutableStateOf(0) }
+    val totalReps = remember { mutableStateOf(0) }
+
+    LaunchedEffect(completedExercises) {
+        totalSets.value = completedExercises.sumOf {
+            viewModel.getExerciseSetsNumber(it.id)
+        }
+
+        totalReps.value = completedExercises.sumOf {
+            viewModel.getExerciseTotalReps(it.id)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1F1F1F))
+            .padding(12.dp)
     ) {
         Text("Общее время: $formattedTime", fontSize = 16.sp, color = Color.White)
         Text("Всего упражнений: $totalExercises", fontSize = 16.sp, color = Color.White)
-        Text("Всего подходов: $totalSets", fontSize = 16.sp, color = Color.White)
-        Text("Всего повторений: $totalReps", fontSize = 16.sp, color = Color.White)
+        Text("Всего подходов: ${totalSets.value}", fontSize = 16.sp, color = Color.White)
+        Text("Всего повторений: ${totalReps.value}", fontSize = 16.sp, color = Color.White)
     }
 }
 

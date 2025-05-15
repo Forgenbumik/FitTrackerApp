@@ -133,6 +133,7 @@ class ExecutingWorkoutViewModel (
                     completedExerciseRepository.delete(currentExecExercise!!)
                     currentExecExercise = null
                 }
+                _setList.clear()
             }
         }
 
@@ -219,7 +220,6 @@ class ExecutingWorkoutViewModel (
                 restSeconds = 0
             }
         }
-        _setList.clear()
         currentExecExercise = currentExecExercise?.copy(duration = exerciseSeconds)
         completedExerciseRepository.update(currentExecExercise!!)
     }

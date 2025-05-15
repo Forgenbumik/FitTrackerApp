@@ -506,13 +506,9 @@ fun SecondSetButtons(
         com.example.fittrackerapp.uielements.executingexercise.LargeButton(
             text = "Далее",
             onClick = {
-                if ((workoutCondition == WorkoutCondition.SET
-                            || workoutCondition == WorkoutCondition.REST
-                            || workoutCondition == WorkoutCondition.PAUSE)
-                    && (lastCondition == WorkoutCondition.SET || lastCondition == WorkoutCondition.REST)
-                ) {
+                if (workoutCondition != WorkoutCondition.REST_AFTER_EXERCISE) {
                     setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-                } else if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
+                } else {
                     setCondition(WorkoutCondition.SET)
                 }
             },
