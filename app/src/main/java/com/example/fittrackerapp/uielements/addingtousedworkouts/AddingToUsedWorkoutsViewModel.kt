@@ -10,12 +10,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
+@HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 class AddingToUsedWorkoutsViewModel(
     private val exerciseRepository: ExerciseRepository
@@ -150,31 +152,35 @@ class AddingToUsedWorkoutsViewModel(
 
     fun deleteExerciseIcon(context: Context, exercise: Exercise) {
 
-        val file = File(context.filesDir, exercise.iconPath)
-        if (file.exists()) {
-            file.delete()
-            val exerciseToChange = exercise.copy(iconPath = "")
-            viewModelScope.launch {
-                exerciseRepository.update(exerciseToChange)
+        val file = exercise.iconPath?.let { File(context.filesDir, it) }
+        if (file != null) {
+            if (file.exists()) {
+                file.delete()
+                val exerciseToChange = exercise.copy(iconPath = "")
+                viewModelScope.launch {
+                    exerciseRepository.update(exerciseToChange)
+                }
+                Toast.makeText(context, "Изображение удалено", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Произошла ошибка", Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(context, "Изображение удалено", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Произошла ошибка", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun deleteExerciseVideo(context: Context, exercise: Exercise) {
 
-        val file = File(context.filesDir, exercise.videoPath)
-        if (file.exists()) {
-            file.delete()
-            val exerciseToChange = exercise.copy(videoPath = "")
-            viewModelScope.launch {
-                exerciseRepository.update(exerciseToChange)
+        val file = exercise.videoPath?.let { File(context.filesDir, it) }
+        if (file != null) {
+            if (file.exists()) {
+                file.delete()
+                val exerciseToChange = exercise.copy(videoPath = "")
+                viewModelScope.launch {
+                    exerciseRepository.update(exerciseToChange)
+                }
+                Toast.makeText(context, "Видео удалено", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Произошла ошибка", Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(context, "Видео удалено", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Произошла ошибка", Toast.LENGTH_SHORT).show()
         }
     }
 }

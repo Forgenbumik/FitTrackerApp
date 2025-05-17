@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)  version "2.1.0"
     id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -80,4 +81,6 @@ dependencies {
     testImplementation ("org.mockito:mockito-core:5.2.0")
     testImplementation ("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation ("junit:junit:4.13.2")
+    implementation("com.google.dagger:hilt-android:2.50")
+    kapt("com.google.dagger:hilt-compiler:2.50")
 }
