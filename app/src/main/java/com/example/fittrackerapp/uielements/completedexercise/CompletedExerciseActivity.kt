@@ -24,9 +24,13 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,6 +46,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -116,7 +121,8 @@ fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExe
     Column(
         modifier.windowInsetsPadding(WindowInsets.statusBars)
     ) {
-        Text(exerciseName)
+        Text(exerciseName, fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold)
         ExerciseInformation(completedExercise)
         SetsTable(setList, formatTime, isShowChangeWindow)
     }
@@ -130,9 +136,15 @@ fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExe
 @Composable
 fun ExerciseInformation(exercise: CompletedExercise, viewModel: CompletedExerciseViewModel = viewModel()) {
 
-    val exerciseSetsNumber = viewModel.getExerciseSetsNumber()
+    val setList = viewModel.setList
 
-    val exerciseTotalReps = viewModel.getExerciseTotalReps()
+    val exerciseSetsNumber = setList.size
+
+    var exerciseTotalReps = 0
+
+    setList.forEach {
+        exerciseTotalReps += it.reps
+    }
 
     Text("Подходов: ${exerciseSetsNumber}. Всего повторений: ${exerciseTotalReps}")
 }
@@ -151,7 +163,7 @@ fun SetsTableHeaders() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.LightGray)
+            .background(Color(0xFF012935))
             .padding(8.dp)) {
 
         val modifier = Modifier.weight(1f)
@@ -176,7 +188,7 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
     ) {
         items(setListValue.size) { i ->  // Используем items вместо for
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF015965)),
                 verticalAlignment = Alignment.CenterVertically // Выравнивание по центру
             ) {
                 val modifier = Modifier.weight(1f)
@@ -189,12 +201,15 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                 Box(modifier = Modifier
                     .aspectRatio(2f)
                     .weight(1f), contentAlignment = Alignment.Center) {
-                    Button(onClick = {
+
+                    IconButton(onClick = {
                         viewModel.setChangingSet(setListValue[i])
                         viewModel.setIsChangingSet(true)
-
                     }) {
-                        Text("Изменить")
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Редактировать"
+                        )
                     }
                 }
             }

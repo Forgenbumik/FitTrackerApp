@@ -159,7 +159,7 @@ fun ExercisesList(
             .padding(16.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF2A3B4C)) // Темный фон блока
+            .background(Color(0xFF015965))
     ) {
         LazyColumn(
             modifier = Modifier.padding(vertical = 8.dp)
@@ -204,7 +204,7 @@ fun WorkoutItem(
         )
     }
     HorizontalDivider(
-        color = Color(0xFF1B9AAA).copy(alpha = 0.5f),
+        color = Color.Black.copy(alpha = 0.5f),
         thickness = 1.dp,
         modifier = Modifier.padding(horizontal = 12.dp)
     )

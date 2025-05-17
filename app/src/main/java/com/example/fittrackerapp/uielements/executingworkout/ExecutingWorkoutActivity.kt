@@ -27,10 +27,14 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -45,9 +49,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.fittrackerapp.App
@@ -171,7 +178,7 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).background(Color(0xFF18181A)),
                                 workoutName: String, onEndClick: () -> Unit,
                                 setCondition: (WorkoutCondition) -> Unit,
                                 formatTime: (Int) -> String,
@@ -203,9 +210,12 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val changingSet = viewModel.changingSet.collectAsState()
     Column(modifier = modifier) {
-        Text(workoutName)
+        Text(workoutName, fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold,)
+        Spacer(modifier = Modifier.height(12.dp))
         if (currentExercise != null) {
-            Text(currentExercise.name)
+            Text(currentExercise.name, fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold)
         }
         if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
             val file = currentExercise?.videoPath?.let { File(context.filesDir, it) }
@@ -243,7 +253,7 @@ fun SetsTableHeaders() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.LightGray)
+            .background(Color(0xFF012935))
             .padding(8.dp)) {
 
                 val modifier = Modifier.weight(1f)
@@ -281,11 +291,14 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                 Box(modifier = Modifier
                     .aspectRatio(2f)
                     .weight(1f), contentAlignment = Alignment.Center) {
-                    Button(onClick = {
+                    IconButton(onClick = {
                         viewModel.setChangingSet(setListValue[i])
                         isShowChangeWindow.value = true
                     }) {
-                        Text("Изменить")
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Редактировать"
+                        )
                     }
                 }
             }
@@ -365,25 +378,55 @@ fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSel
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ExerciseInformation(nextExercise: State<WorkoutDetail>, stringRestTime: State<String>, formatTime: (Int) -> String) {
-
+fun ExerciseInformation(
+    nextExercise: State<WorkoutDetail>,
+    stringRestTime: State<String>,
+    formatTime: (Int) -> String
+) {
     val nextExerciseValue = nextExercise.value
-
     val stringRestTimeValue = stringRestTime.value
 
-    Column {
-        Text("Отдых: ${stringRestTimeValue}$")
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1F1F1F))  // Можно добавить фон по желанию
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Отдых: $stringRestTimeValue",
+                fontSize = 20.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Medium
+            )
 
-        Text(nextExerciseValue.exerciseName)
-        if (nextExerciseValue.isRestManually) {
-            Text("${nextExerciseValue.setsNumber} подходов, ${ nextExerciseValue.reps } повт., отдых: вручную")
-        }
-        else {
-            Text("${nextExerciseValue.setsNumber} подходов, " +
-                    "${ nextExerciseValue.reps } повт., " +
-                    "отдых: ${formatTime(nextExerciseValue.restDuration)}")
+            Text(
+                text = nextExerciseValue.exerciseName,
+                fontSize = 24.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (nextExerciseValue.isRestManually) {
+                Text(
+                    text = "${nextExerciseValue.setsNumber} подходов, ${nextExerciseValue.reps} повт., отдых: вручную",
+                    fontSize = 18.sp,
+                    color = Color.LightGray,
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Text(
+                    text = "${nextExerciseValue.setsNumber} подходов, ${nextExerciseValue.reps} повт., отдых: ${formatTime(nextExerciseValue.restDuration)}",
+                    fontSize = 18.sp,
+                    color = Color.LightGray,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }

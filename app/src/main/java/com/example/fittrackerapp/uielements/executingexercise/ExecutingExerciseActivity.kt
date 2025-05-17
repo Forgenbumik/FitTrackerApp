@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -195,7 +196,8 @@ fun MainScreen(
 
     val changingSet = viewModel.changingSet.collectAsState()
     Column(modifier = modifier) {
-        Text(exerciseName)
+        Text(exerciseName, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(modifier = Modifier.height(14.dp))
         if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
             val file = exercise.videoPath?.let { File(context.filesDir, it) }
             if (file != null) {
@@ -227,7 +229,7 @@ fun SetsTableHeaders() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .background(Color(0xFF012935))
             .padding(vertical = 8.dp, horizontal = 12.dp)
     ) {
         val modifier = Modifier.weight(1f)

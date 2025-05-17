@@ -43,8 +43,9 @@ class CompletedExerciseViewModel(
             loadCompletedExercise()
         }
         viewModelScope.launch {
-            setRepository.getByCompletedExerciseIdFlow(completedExerciseId).collect {
-                _setList = it.toMutableStateList()
+            setRepository.getByCompletedExerciseIdFlow(completedExerciseId).collect { newList ->
+                _setList.clear()
+                _setList.addAll(newList)
             }
         }
     }

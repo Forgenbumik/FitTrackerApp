@@ -209,7 +209,7 @@ fun ExerciseItem(
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = { onClick(workoutDetail) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) // Зеленая кнопка
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF015965))
         ) {
             Text("Запустить", color = Color.White)
         }

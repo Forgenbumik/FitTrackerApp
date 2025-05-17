@@ -13,8 +13,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +43,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -48,6 +53,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -186,14 +192,12 @@ fun MainScreen(
     val workouts = viewModel.workoutsList.collectAsState().value
     val menuOffset = remember { mutableStateOf(Offset.Zero) }
 
-    Column(modifier = Modifier.background(DarkerBackground)) {
+    Column(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         TopBar(onBackClick = onBackClick, onPlusClick = onPlusClick)
 
-        WorkoutListContainer {
-            FavouriteWorkoutsList(favouriteWorkouts, menuOffset, isMenuVisible, onWorkoutClick)
-            Spacer(modifier = Modifier.height(8.dp))
-            AllWorkoutsList(workouts, menuOffset, isMenuVisible, onWorkoutClick)
-        }
+        FavouriteWorkoutsList(favouriteWorkouts, menuOffset, isMenuVisible, onWorkoutClick)
+        Spacer(modifier = Modifier.height(8.dp))
+        AllWorkoutsList(workouts, menuOffset, isMenuVisible, onWorkoutClick)
     }
 
     if (isMenuVisible.value && selectedWorkout != null) {
@@ -207,11 +211,10 @@ fun MainScreen(
 }
 
 @Composable
-fun TopBar(onPlusClick: () -> Unit, onBackClick: () -> Unit, ) {
+fun TopBar(onPlusClick: () -> Unit, onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(DarkerBackground)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -240,37 +243,50 @@ fun FavouriteWorkoutsList(
     isMenuVisible: MutableState<Boolean>,
     onWorkoutClick: (BaseWorkout) -> Unit
 ) {
-
     val context = LocalContext.current
 
-    Column {
-        Text("Избранные сценарии")
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(favouriteWorkouts) { workout ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp).clickable {
-                            onWorkoutClick(workout)
-                        },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (workout is Exercise && workout.iconPath != null) {
-                        FileIcon(File(context.filesDir, workout.iconPath))
-                    }
-                    else {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_exercise_default), // Здесь используем идентификатор ресурса
-                            contentDescription = "Иконка упражнения",
-                            modifier = Modifier.size(36.dp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF015965)) // бирюзовый фон
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(
+                "Избранные сценарии",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White, // на светлом фоне лучше чёрный
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LazyColumn {
+                items(favouriteWorkouts) { workout ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onWorkoutClick(workout) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (workout is Exercise && workout.iconPath != null) {
+                            FileIcon(File(context.filesDir, workout.iconPath))
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_exercise_default),
+                                contentDescription = "Иконка упражнения",
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Text(
+                            workout.name,
+                            color = Color.White,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
                         )
+                        ButtonMore(menuOffset, isMenuVisible, workout)
                     }
-                    Text(workout.name)
-                    ButtonMore(menuOffset, isMenuVisible, workout)
+                    HorizontalDivider(color = Color.Black.copy(alpha = 0.2f))
                 }
-                HorizontalDivider()
             }
         }
     }
@@ -286,49 +302,49 @@ fun AllWorkoutsList(
 ) {
     val context = LocalContext.current
 
-    Text("Больше упражнений")
-
-    LazyColumn {
-        items(workouts) { workout ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp).clickable {
-                        onWorkoutClick(workout)
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (workout is Exercise && workout.iconPath != null) {
-                    val file = File(context.filesDir, workout.iconPath)
-                    FileIcon(file)
-                }
-                else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_exercise_default), // Здесь используем идентификатор ресурса
-                        contentDescription = "Иконка упражнения",
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-                Text(workout.name, modifier = Modifier.weight(1f))
-                ButtonMore(menuOffset, isMenuVisible, workout)
-            }
-            HorizontalDivider()
-        }
-    }
-}
-
-@Composable
-fun WorkoutListContainer(content: @Composable ColumnScope.() -> Unit) {
-    Surface(
+    Card(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
-        shape = RoundedCornerShape(16.dp),
-        tonalElevation = 4.dp,
-        color = LightTurquoise
+            .fillMaxWidth()
+            .padding(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF015965))
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
-            content()
+            Text(
+                "Больше упражнений",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LazyColumn {
+                items(workouts) { workout ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onWorkoutClick(workout) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (workout is Exercise && workout.iconPath != null) {
+                            FileIcon(File(context.filesDir, workout.iconPath))
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_exercise_default),
+                                contentDescription = "Иконка упражнения",
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Text(
+                            workout.name,
+                            color = Color.White,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                        )
+                        ButtonMore(menuOffset, isMenuVisible, workout)
+                    }
+                    HorizontalDivider(color = Color.Black.copy(alpha = 0.2f))
+                }
+            }
         }
     }
 }
@@ -444,19 +460,13 @@ fun ExerciseChangeWindow(modifier: Modifier = Modifier, setIsChangingExercise: (
 
     val selected = viewModel.selectedWorkout.collectAsState().value as? Exercise
 
-
-    if (selected !is Exercise) {
-        Log.e("ExerciseChangeWindow", "Selected workout is not an Exercise")
-        return
-    }
-
     val context = LocalContext.current
 
     val iconLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
             uri?.let {
-                viewModel.saveExerciseIcon(selected, uri, context)
+                selected?.let { viewModel.saveExerciseIcon(it, uri, context) }
             }
         }
     )
@@ -465,74 +475,107 @@ fun ExerciseChangeWindow(modifier: Modifier = Modifier, setIsChangingExercise: (
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
             uri?.let {
-                viewModel.saveExerciseVideo(selected, uri, context)
+                selected?.let { viewModel.saveExerciseVideo(it, uri, context) }
             }
         }
     )
 
     ModalBottomSheet(
         onDismissRequest = { setIsChangingExercise(false) },
-    )
-    {
-        Column {
-            NameField(selected.name)
-            if (selected.iconPath == null) {
-                Button(
-                    onClick = {
-                        iconLauncher.launch(arrayOf("image/*"))
-                    }
-                ) {
-                    Text("Добавить иконку")
-                }
-            } else {
-                selected.iconPath?.let { path ->
-                    val file = File(context.filesDir, path)
-                    if (file.exists()) {
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Новое упражнение",
+                fontSize = 22.sp,
+                color = Color(0xFF007D8A), // Бирюзово-синий
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            if (selected != null) {
+                NameField(selected.name)
+            }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Иконка упражнения", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(8.dp))
+
+                    if (selected?.iconPath == null) {
+                        OutlinedButton(
+                            onClick = { iconLauncher.launch(arrayOf("image/*")) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF007D8A))
+                        ) {
+                            Text("Добавить иконку")
+                        }
+                    } else {
+                        val file = File(context.filesDir, selected.iconPath!!)
                         val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(64.dp) // круглый аватар
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                                .size(128.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, Color.Gray)
                         )
-                        Button(
-                            onClick = {
-                                viewModel.deleteExerciseIcon(context, selected)
-                            }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { viewModel.deleteExerciseIcon(context, selected) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
                         ) {
                             Text("Удалить иконку")
                         }
+                    }
+                }
+            }
+
+            // 🎥 Видео
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.Gray)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Видео выполнения", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(8.dp))
+
+                    if (selected?.videoPath == null) {
+                        OutlinedButton(
+                            onClick = { videoLauncher.launch(arrayOf("video/*")) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF007D8A))
+                        ) {
+                            Text("Добавить видео")
+                        }
                     } else {
-                        Log.e("ExerciseChangeWindow", "Файл иконки не найден: ${file.absolutePath}")
+                        val file = File(context.filesDir, selected.videoPath!!)
+                        VideoPlayerFromFile(file)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { viewModel.deleteExerciseVideo(context, selected) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                        ) {
+                            Text("Удалить видео")
+                        }
                     }
                 }
             }
-            if (selected.videoPath == null) {
-                Button(
-                    onClick = {
-                        videoLauncher.launch(arrayOf("video/*"))
-                    }
-                ) {
-                    Text("Добавить видео выполнения")
-                }
-            }
-            else {
-                val file = File(context.filesDir, selected.videoPath)
-                VideoPlayerFromFile(file)
-                Button(
-                    onClick = {
-                        viewModel.deleteExerciseVideo(context, selected)
-                    }
-                ) {
-                    Text("Удалить видео")
-                }
-            }
-            Button(onClick = {
-                setIsChangingExercise(false)
-            }) {
-                Text(text = "ОК")
+            Button(
+                onClick = {
+                    setIsChangingExercise(false)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007D8A))
+            ) {
+                Text("Сохранить", color = Color.White, fontSize = 18.sp)
             }
         }
     }

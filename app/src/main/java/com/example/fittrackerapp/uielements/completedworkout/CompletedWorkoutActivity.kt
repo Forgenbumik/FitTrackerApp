@@ -69,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.uielements.completedworkouts.CompletedWorkoutsActivity
 import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutViewModel
+import com.example.fittrackerapp.uielements.main.MainActivity
 
 class CompletedWorkoutActivity: ComponentActivity()  {
     private lateinit var viewModel: CompletedWorkoutViewModel
@@ -114,7 +115,7 @@ class CompletedWorkoutActivity: ComponentActivity()  {
 
     override fun onBackPressed() {
         super.onBackPressed()
-        val intent = Intent(this, CompletedWorkoutsActivity::class.java)
+        val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
     }
@@ -141,7 +142,6 @@ fun MainScreen(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // Кнопка Назад
             IconButton(onClick = { onBackClick() }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -154,7 +154,6 @@ fun MainScreen(
             WorkoutInformation()
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Список упражнений в отдельном визуальном блоке
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -195,7 +194,7 @@ fun WorkoutInformation(viewModel: CompletedWorkoutViewModel = viewModel()) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1F1F1F))
+            .background(Color(0xFF015965))
             .padding(12.dp)
     ) {
         Text("Общее время: $formattedTime", fontSize = 16.sp, color = Color.White)
@@ -242,7 +241,7 @@ fun ExerciseItem(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().background(Color(0xFF015965))
             .padding(vertical = 8.dp)
             .clickable { onExerciseClick(completedExercise, exerciseName.value) },
         verticalAlignment = Alignment.CenterVertically

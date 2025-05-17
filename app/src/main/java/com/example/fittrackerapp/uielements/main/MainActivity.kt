@@ -157,7 +157,7 @@ fun MainScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0D1B2A)) // Тёмный фон
+            .background(Color(0xFF0D1B2A))
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(16.dp)
     ) {
