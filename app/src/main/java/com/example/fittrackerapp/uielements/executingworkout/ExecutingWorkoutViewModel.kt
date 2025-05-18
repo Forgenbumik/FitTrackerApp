@@ -20,9 +20,12 @@ import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import com.example.fittrackerapp.service.ServiceCommand
+import com.example.fittrackerapp.service.WorkoutRecordingCommunicator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -32,63 +35,35 @@ import javax.inject.Inject
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingWorkoutViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
-    private val exerciseRepository: ExerciseRepository,
     private val workoutDetailRepository: WorkoutDetailRepository,
     private val setsRepository: SetRepository,
-    private val completedWorkoutRepository: CompletedWorkoutRepository,
-    private val completedExerciseRepository: CompletedExerciseRepository,
-    private val lastWorkoutRepository: LastWorkoutRepository
 ): ViewModel() {
 
-    private val workoutId: Long? get() = savedStateHandle["workoutId"]
-    private val firstDetailId: Long? get() = savedStateHandle["detailId"]
-
-    private var completedWorkout = CompletedWorkout(workoutId = workoutId!!)
-
-    var completedWorkoutId = 0L
-
-    val _isSaveCompleted = MutableStateFlow(false)
+    private val _isSaveCompleted = MutableStateFlow(false)
     val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
 
-    private var exerciseJob: Job? = null
+    var completedWorkoutId = 0L
+    private var currentExerciseId = 0L
 
-    private var currentExecExercise: CompletedExercise? = null
+    private val _serviceCommands = MutableSharedFlow<ServiceCommand>()
 
+    private val _currentExerciseName = MutableStateFlow("")
+    val currentExerciseName: StateFlow<String> = _currentExerciseName
 
-
-    private val _nextExercise = MutableStateFlow(WorkoutDetail())
+    private val _nextExercise = MutableStateFlow(WorkoutDetail(0, 0, 0, 0, "", 0, 0, 0, false))
     val nextExercise: StateFlow<WorkoutDetail> = _nextExercise
-
-    private var currentSet = Set()
 
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
 
-    private val _workoutCondition = MutableStateFlow(WorkoutCondition.SET)
-    val workoutCondition: StateFlow<WorkoutCondition> = _workoutCondition
-
-    private val _lastCondition = MutableStateFlow(WorkoutCondition.PAUSE)
-    val lastCondition: StateFlow<WorkoutCondition> = _lastCondition
-
-    private var workoutSeconds = 0
-
     private val _stringWorkoutTime = MutableStateFlow("00:00")
     val stringWorkoutTime: StateFlow<String> = _stringWorkoutTime
-
-    private var exerciseSeconds = 0
 
     private val _stringExerciseTime = MutableStateFlow("00:00")
     val stringExerciseTime: StateFlow<String> = _stringExerciseTime
 
-    private var exerciseRestSeconds = 0
-
-    private var setSeconds = 0
-
     private val _stringSetTime = MutableStateFlow("00:00")
     val stringSetTime: StateFlow<String> = _stringSetTime
-
-    private var restSeconds = 0
 
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
@@ -96,239 +71,119 @@ class ExecutingWorkoutViewModel @Inject constructor(
     private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(null)
     val changingSet: StateFlow<Set?> = _changingSet
 
-    private val _currentExercise = MutableStateFlow(Exercise())
-    val currentExercise: StateFlow<Exercise?> = _currentExercise
+    private val _workoutCondition = MutableStateFlow(WorkoutCondition.SET)
+    val workoutCondition: StateFlow<WorkoutCondition> = _workoutCondition
+
+    private val _lastCondition = MutableStateFlow(WorkoutCondition.PAUSE)
+    val lastCondition: StateFlow<WorkoutCondition> = _lastCondition
 
     init {
         viewModelScope.launch {
-            runWorkoutTimer()
+            setsRepository.getByCompletedExerciseIdFlow(currentExerciseId)
+                .collect { newSets ->
+                    _setList.clear()
+                    _setList.addAll(newSets)
+                }
         }
         viewModelScope.launch {
-            runWorkout()
-        }
-    }
-
-    private suspend fun runWorkout() {
-        completedWorkoutId = completedWorkoutRepository.insert(completedWorkout)
-        completedWorkout = completedWorkout.copy(id = completedWorkoutId)
-        val details = workoutDetailRepository.getByWorkoutId(workoutId!!).toMutableList()
-        val firstExercise = details.first { it.id == firstDetailId }
-        details.remove(firstExercise)
-        details.add(0, firstExercise)
-        for (i in 0..(details.size-1)) {
-            if (_workoutCondition.value != WorkoutCondition.END) {
-                if (i+1 != details.size) {
-                    _nextExercise.value = details[i+1]
-                }
-                runExercise(details[i])
-                currentExecExercise = currentExecExercise?.copy(duration = exerciseSeconds)
-                exerciseSeconds = 0
-                if (_workoutCondition.value != WorkoutCondition.END) {
-                    setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-                }
-                runRestAfterExerciseTimer()
-
-                currentExecExercise = currentExecExercise?.copy(restDuration = exerciseRestSeconds)
-                exerciseRestSeconds = 0
-                if (_setList.isNotEmpty()) {
-                    completedExerciseRepository.update(currentExecExercise!!)
-                }
-                else {
-                    completedExerciseRepository.delete(currentExecExercise!!)
-                    currentExecExercise = null
-                }
-                _setList.clear()
+            WorkoutRecordingCommunicator.completedWorkoutId.collectLatest {
+                completedWorkoutId = it
             }
         }
-
-        completedWorkout = completedWorkout.copy(duration = workoutSeconds)
-        completedWorkoutRepository.update(completedWorkout)
-        delay(1000)
-        insertLastWorkout()
-        setCondition(WorkoutCondition.END)
-    }
-
-     fun insertLastWorkout() {
-         if (_isSaveCompleted.value) return
-         viewModelScope.launch {
-             lastWorkoutRepository.insertLastWorkout(completedWorkout)
-             Log.d("LastWorkout", "Last workout inserted")
-             _isSaveCompleted.value = true
-         }
-    }
-
-    fun updateSet(set: Set, reps: Int, weight: Double) {
-        val newSet = set.copy(reps = reps, weight = weight)
-        _setList[set.setNumber - 1] = newSet
         viewModelScope.launch {
-            setsRepository.update(newSet)
+            WorkoutRecordingCommunicator.currentExercise.collectLatest {
+                if (it != null) {
+                    currentExerciseId = it.id
+                }
+            }
         }
-    }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.currentExerciseName.collectLatest {
+                _currentExerciseName.value = it
+            }
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.workoutCondition.collectLatest {
+                _workoutCondition.value = it
+            }
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.lastCondition.collectLatest {
+                _lastCondition.value = it
+            }
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.workoutSeconds.collectLatest {
+                updateWorkoutTime(it)
+            }
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.exerciseSeconds.collectLatest {
+                updateExerciseTime(it)
+            }
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.setSeconds.collectLatest {
+                updateSetTime(it)
+            }
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.restSeconds.collectLatest {
+                updateRestTime(it)
+            }
+        }
+        viewModelScope.launch {
 
-    private suspend fun runWorkoutTimer() {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.END -> break
-                else -> workoutStopwatch()
+        }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.nextExercise.collectLatest {
+                if (it != null) {
+                    _nextExercise.value = it
+                }
             }
         }
     }
 
-    suspend fun workoutStopwatch() {
-        while (workoutCondition.value != WorkoutCondition.PAUSE
-            && workoutCondition.value != WorkoutCondition.END) {
-            workoutSeconds++
-            completedWorkout = completedWorkout.copy(duration = workoutSeconds)
-            _stringWorkoutTime.value = formatTime(workoutSeconds)
-            delay(1000)
+    fun sendCommand(command: ServiceCommand) {
+        viewModelScope.launch {
+            _serviceCommands.emit(command)
         }
+    }
+
+    fun updateWorkoutTime(secs: Int) {
+        _stringWorkoutTime.value = formatTime(secs)
+    }
+
+    fun updateExerciseTime(secs: Int) {
+        _stringExerciseTime.value = formatTime(secs)
+    }
+
+    fun updateSetTime(secs: Int) {
+        _stringSetTime.value = formatTime(secs)
+    }
+
+    fun updateRestTime(secs: Int) {
+        _stringRestTime.value = formatTime(secs)
     }
 
     fun setCondition(condition: WorkoutCondition) {
         if (_workoutCondition.value != condition) {
-            _lastCondition.value = workoutCondition.value
-            _workoutCondition.value = condition
+            sendCommand(ServiceCommand.SetCommand)
         }
     }
 
-    private suspend fun runExercise(detail: WorkoutDetail) {
+    fun setChangingSet(set: Set?) {
+        run {
+            sendCommand(ServiceCommand.SetChangingSetCommand(set))
+        }
+    }
 
-        exerciseJob?.cancel()
-        exerciseJob = viewModelScope.launch {
-            workoutCondition.collectLatest { condition ->
-                when (condition) {
-                    WorkoutCondition.SET, WorkoutCondition.REST -> runExerciseTimer()
-                    WorkoutCondition.PAUSE -> waitForResume()
-                    WorkoutCondition.END -> return@collectLatest
-                    else -> Unit
-                }
+    fun setNextExerciseById(workoutDetailId: Long) {
+        viewModelScope.launch {
+            val workoutDetail = workoutDetailRepository.getById(workoutDetailId)
+            if (workoutDetail != null) {
+                _nextExercise.value = workoutDetail
             }
-        }
-        currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId)
-        val currentExecExerciseId = completedExerciseRepository.insert(currentExecExercise!!)
-        currentExecExercise = currentExecExercise?.copy(id = currentExecExerciseId)
-        _currentExercise.value = exerciseRepository.getById(detail.exerciseId)!!
-
-        for (i in 1..detail.setsNumber) {
-            if (workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
-                && workoutCondition.value != WorkoutCondition.END) {
-
-                runSetTimer()
-                currentSet = Set(0, currentExecExerciseId, setSeconds, detail.reps, 0.0, 0, i)
-                val setId = setsRepository.insert(currentSet)
-                currentSet = currentSet.copy(id = setId)
-                _setList.add(currentSet)
-                runRestTimer(setId, detail.restDuration)
-                currentSet = currentSet.copy(restDuration = restSeconds)
-                restSeconds = 0
-            }
-        }
-        currentExecExercise = currentExecExercise?.copy(duration = exerciseSeconds)
-        completedExerciseRepository.update(currentExecExercise!!)
-    }
-
-    private suspend fun runExerciseTimer() {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.SET -> exerciseStopwatch()
-                WorkoutCondition.REST -> exerciseStopwatch()
-                else -> break
-            }
-        }
-    }
-
-    private suspend fun exerciseStopwatch() {
-        while (workoutCondition.value == WorkoutCondition.SET
-            || workoutCondition.value == WorkoutCondition.REST) {
-
-            delay(10) // Мини-пауза, чтобы убедиться, что состояние не изменилось
-            if (workoutCondition.value != WorkoutCondition.SET
-                && workoutCondition.value != WorkoutCondition.REST) break
-
-            exerciseSeconds++
-            _stringExerciseTime.value = formatTime(exerciseSeconds)
-            delay(1000)
-        }
-
-    }
-
-    private suspend fun runRestAfterExerciseTimer() {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.REST_AFTER_EXERCISE -> restAfterExerciseStopwatch()
-                WorkoutCondition.PAUSE -> waitForResume()
-                else -> break
-            }
-        }
-    }
-
-    private suspend fun restAfterExerciseStopwatch() {
-        while (workoutCondition.value == WorkoutCondition.REST_AFTER_EXERCISE) {
-            exerciseRestSeconds++
-            _stringRestTime.value = formatTime(exerciseRestSeconds)
-            delay(1000)
-        }
-    }
-
-    private suspend fun runSetTimer() {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.PAUSE -> waitForResume()
-                WorkoutCondition.SET -> setStopwatch()
-                else -> break
-            }
-        }
-    }
-
-    private suspend fun waitForResume() {
-        while (workoutCondition.value == WorkoutCondition.PAUSE
-            && workoutCondition.value != WorkoutCondition.END) {
-            delay(500) // Ждём, пока не изменится состояние
-        }
-    }
-
-    private suspend fun setStopwatch() {
-        while (workoutCondition.value == WorkoutCondition.SET) {
-            setSeconds++
-            _stringSetTime.value = formatTime(setSeconds)
-            delay(1000)
-        }
-    }
-
-    private suspend fun runRestTimer(setId: Long, restDuration: Int) {
-        while (true) {
-            when (workoutCondition.value) {
-                WorkoutCondition.REST -> restStopwatch(restDuration)
-                WorkoutCondition.PAUSE -> waitForResume()
-                else -> break
-            }
-        }
-        if (setId != 0L) {
-            setsRepository.updateRestDuration(setId, restSeconds)
-        }
-        setSeconds = 0
-    }
-
-    suspend fun restStopwatch(duration: Int) {
-        if (duration > 0) {
-            while (workoutCondition.value == WorkoutCondition.REST
-                && restSeconds < duration) {
-                restSeconds++
-                _stringRestTime.value = formatTime(restSeconds)
-                delay(1000)
-            }
-        }
-        else {
-            while (workoutCondition.value == WorkoutCondition.REST) {
-                restSeconds++
-                _stringRestTime.value = formatTime(restSeconds)
-                delay(1000)
-            }
-        }
-        if (restSeconds == duration) {
-            setCondition(WorkoutCondition.SET)
         }
     }
 
@@ -339,7 +194,9 @@ class ExecutingWorkoutViewModel @Inject constructor(
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 
-    fun setChangingSet(set: Set?) {
-        _changingSet.value = set
+    fun updateSet(set: Set, reps: Int, weight: Double) {
+        run {
+            sendCommand(ServiceCommand.UpdateSetCommand(set, reps, weight))
+        }
     }
 }

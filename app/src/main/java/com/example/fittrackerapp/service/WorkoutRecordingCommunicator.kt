@@ -18,6 +18,7 @@ object WorkoutRecordingCommunicator {
     val exerciseSeconds = MutableStateFlow(0)
     val setSeconds = MutableStateFlow(0)
     val restSeconds = MutableStateFlow(0)
+    val exerciseRestSeconds = MutableStateFlow(0)
     val changingSet = MutableStateFlow<Set?>(null)
     val nextExercise = MutableStateFlow<WorkoutDetail?>(null)
 
