@@ -9,7 +9,6 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import com.example.fittrackerapp.App
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import javax.inject.Inject
 
 
 class WorkoutRecordingService: Service() {
@@ -39,11 +39,11 @@ class WorkoutRecordingService: Service() {
     }
 
     // --- Репозитории ---
-    private lateinit var completedWorkoutRepository: CompletedWorkoutRepository
-    private lateinit var workoutDetailRepository: WorkoutDetailRepository
-    private lateinit var setsRepository: SetRepository
-    private lateinit var lastWorkoutRepository: LastWorkoutRepository
-    private lateinit var completedExerciseRepository: CompletedExerciseRepository
+    @Inject private lateinit var completedWorkoutRepository: CompletedWorkoutRepository
+    @Inject private lateinit var workoutDetailRepository: WorkoutDetailRepository
+    @Inject private lateinit var setsRepository: SetRepository
+    @Inject private lateinit var lastWorkoutRepository: LastWorkoutRepository
+    @Inject private lateinit var completedExerciseRepository: CompletedExerciseRepository
 
     // --- Сервисные переменные ---
     private var isTimerStarted = false
@@ -52,7 +52,7 @@ class WorkoutRecordingService: Service() {
 
     // --- Работа с тренировкой ---
     private var workoutId = 0L
-    private var workoutDetailId = 0L
+    private var firstDetailId = 0L
     private lateinit var completedWorkout: CompletedWorkout
     private lateinit var currentSet: Set
     private var currentExerciseId = 0L
@@ -78,12 +78,6 @@ class WorkoutRecordingService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        val app = application as App
-        completedWorkoutRepository = CompletedWorkoutRepository(app.appDatabase.completedWorkoutDao())
-        workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
-        setsRepository = SetRepository(app.appDatabase.setDao())
-        lastWorkoutRepository = LastWorkoutRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
-        completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -91,9 +85,9 @@ class WorkoutRecordingService: Service() {
         startForegroundService()
 
         workoutId = intent?.getLongExtra("workoutId", -1) ?: -1
-        workoutDetailId = intent?.getLongExtra("detailId", -1) ?: -1
+        firstDetailId = intent?.getLongExtra("detailId", -1) ?: -1
         if (!isTimerStarted) {
-            completedWorkout = CompletedWorkout(0, 0, "", LocalDateTime.now(), workoutId)
+            completedWorkout = CompletedWorkout(workoutId =  workoutId)
             serviceScope.launch {
                 launch { runWorkoutTimer() }
                 launch { runWorkout() }
@@ -152,7 +146,7 @@ class WorkoutRecordingService: Service() {
         _completedWorkoutId.value = id
         completedWorkout = completedWorkout.copy(id = id)
         val details = workoutDetailRepository.getByWorkoutId(workoutId).toMutableList()
-        val firstExercise = details.first { it.exerciseId == workoutDetailId }
+        val firstExercise = details.first { it.id == firstDetailId }
         details.remove(firstExercise)
         details.add(0, firstExercise)
         for (i in 0..(details.size-1)) {
@@ -230,7 +224,7 @@ class WorkoutRecordingService: Service() {
             }
         }
 
-        _currentExercise.value = CompletedExercise(0, detail.exerciseId, 0, "", LocalDateTime.now(), _completedWorkoutId.value, 0)
+        _currentExercise.value = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId =  _completedWorkoutId.value)
         _currentExerciseName.value = detail.exerciseName
 
         for (i in 1..detail.setsNumber) {
@@ -239,7 +233,7 @@ class WorkoutRecordingService: Service() {
                 runSetTimer()
                 currentSet = Set(0, currentExerciseId, _setSeconds.value, detail.reps, 0.0, 0, i)
                 val setId = setsRepository.insert(currentSet)
-                currentSet.id = setId
+                currentSet = currentSet.copy(id = setId)
                 runRestTimer(setId, detail.restDuration)
                 _restSeconds.value = 0
             }
