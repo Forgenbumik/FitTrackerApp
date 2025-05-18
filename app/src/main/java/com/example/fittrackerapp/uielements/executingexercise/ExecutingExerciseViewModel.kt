@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExercise
@@ -20,20 +20,21 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingExerciseViewModel(
-    private val exerciseId: Long,
-    private val plannedSets: Int,
-    private val plannedReps: Int,
-    private val plannedRestDuration: Int,
+    private val savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
     private val completedExerciseRepository: CompletedExerciseRepository,
     private val setsRepository: SetRepository,
     private val lastWorkoutRepository: LastWorkoutRepository
 ): ViewModel() {
+
+    val exerciseId: Long? get() = savedStateHandle["exerciseId"]
+    val plannedSets: Int? get() = savedStateHandle["plannedSets"]
+    val plannedReps: Int? get() = savedStateHandle["plannedReps"]
+    val plannedRestDuration: Int? get() = savedStateHandle["plannedRestDuration"]
 
     var exercise = Exercise()
 
@@ -79,7 +80,7 @@ class ExecutingExerciseViewModel(
 
     init {
         viewModelScope.launch {
-            exerciseRepository.getByIdFlow(exerciseId).collect {
+            exerciseRepository.getByIdFlow(exerciseId!!).collect {
                 if (it != null) {
                     exercise = it
                 }
@@ -102,20 +103,20 @@ class ExecutingExerciseViewModel(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runExercise() {
-        completedExercise = CompletedExercise(exerciseId = exerciseId)
+        completedExercise = CompletedExercise(exerciseId = exerciseId!!)
         completedExerciseId = completedExerciseRepository.insert(completedExercise)
         completedExercise = completedExercise.copy(id = completedExerciseId)
 
-        for (i in 1..plannedSets) {
+        for (i in 1..plannedSets!!) {
             if (workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                _currentSet.value = Set(completedExerciseId = completedExerciseId, duration =  setSeconds, reps = plannedReps, setNumber =  i)
+                _currentSet.value = Set(completedExerciseId = completedExerciseId, duration =  setSeconds, reps = plannedReps!!, setNumber =  i)
                 val setId = setsRepository.insert(_currentSet.value)
                 _currentSet.value = _currentSet.value.copy(id = setId)
                 _setList.add(_currentSet.value)
-                runRestTimer(setId, plannedRestDuration)
+                runRestTimer(setId, plannedRestDuration!!)
                 _currentSet.value = _currentSet.value.copy(restDuration = restSeconds)
                 restSeconds = 0
             }
@@ -239,29 +240,5 @@ class ExecutingExerciseViewModel(
 
     fun setChangingSet(set: Set?) {
         _changingSet.value = set
-    }
-}
-
-class ExecutingExerciseViewModelFactory(
-    private val exerciseId: Long,
-    private val plannedSets: Int,
-    private val plannedReps: Int,
-    private val plannedRestDuration: Int,
-    private val exerciseRepository: ExerciseRepository,
-    private val completedExerciseRepository: CompletedExerciseRepository,
-    private val setsRepository: SetRepository,
-    private val lastWorkoutRepository: LastWorkoutRepository
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ExecutingExerciseViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return ExecutingExerciseViewModel(
-                exerciseId, plannedSets, plannedReps,
-                plannedRestDuration, exerciseRepository,
-                completedExerciseRepository, setsRepository,
-                lastWorkoutRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

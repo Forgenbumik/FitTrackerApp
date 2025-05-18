@@ -2,6 +2,7 @@ package com.example.fittrackerapp.uielements.completedworkout
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -11,16 +12,21 @@ import com.example.fittrackerapp.entities.CompletedExerciseRepository
 import com.example.fittrackerapp.entities.CompletedWorkout
 import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.LastWorkout
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
-class CompletedWorkoutViewModel(
-    private val completedWorkoutId: Long,
+class CompletedWorkoutViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val completedWorkoutRepository: CompletedWorkoutRepository,
     private val completedExerciseRepository: CompletedExerciseRepository
 ): ViewModel() {
+
+    val completedWorkoutId: Long? get() = savedStateHandle["completedWorkoutId"]
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val _completedWorkout = MutableStateFlow(CompletedWorkout())
@@ -32,11 +38,17 @@ class CompletedWorkoutViewModel(
 
     init {
         viewModelScope.launch {
-            _completedWorkout.value = completedWorkoutRepository.getById(completedWorkoutId)
+            _completedWorkout.value = completedWorkoutId?.let {
+                completedWorkoutRepository.getById(
+                    it
+                )
+            }!!
         }
         viewModelScope.launch {
-            completedExerciseRepository.getByCompletedWorkoutIdFlow(completedWorkoutId).collect {
-                _completedExercises.value = it
+            completedWorkoutId?.let {
+                completedExerciseRepository.getByCompletedWorkoutIdFlow(it).collect {
+                    _completedExercises.value = it
+                }
             }
         }
     }
@@ -97,21 +109,5 @@ class CompletedWorkoutViewModel(
 
     fun setWorkoutNotes(notes: String) {
         _completedWorkout.value = _completedWorkout.value.copy(notes = notes)
-    }
-}
-
-class CompletedWorkoutViewModelFactory(
-    private val completedWorkoutId: Long,
-    private val completedWorkoutRepository: CompletedWorkoutRepository,
-    private val completedExerciseRepository: CompletedExerciseRepository
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(CompletedWorkoutViewModel::class.java) -> {
-                CompletedWorkoutViewModel(completedWorkoutId, completedWorkoutRepository, completedExerciseRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }

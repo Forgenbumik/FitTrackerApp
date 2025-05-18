@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -56,10 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.App
-import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
@@ -68,7 +66,7 @@ import java.io.File
 
 class AddingToUsedWorkoutsActivity: ComponentActivity() {
 
-    lateinit var viewModel: AddingToUsedWorkoutsViewModel
+    private val viewModel: AddingToUsedWorkoutsViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,17 +85,7 @@ class AddingToUsedWorkoutsActivity: ComponentActivity() {
                 }
             }
         }
-
-        val app = application as App
-
-        val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
-
-        val factory = AddingToUsedWorkoutsModelFactory(exerciseRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(AddingToUsedWorkoutsViewModel::class.java)
     }
-
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     val addExerciseLauncher = registerForActivityResult(
@@ -124,8 +112,6 @@ class AddingToUsedWorkoutsActivity: ComponentActivity() {
         val intent = Intent(this, CreatingWorkoutActivity::class.java)
         startActivity(intent)
     }
-
-
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

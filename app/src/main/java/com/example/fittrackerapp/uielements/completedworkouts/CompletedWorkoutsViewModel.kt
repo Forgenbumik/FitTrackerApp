@@ -11,11 +11,14 @@ import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
 import com.example.fittrackerapp.entities.CompletedWorkout
 import com.example.fittrackerapp.entities.CompletedWorkoutRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class CompletedWorkoutsViewModel(
+@HiltViewModel
+class CompletedWorkoutsViewModel @Inject constructor(
     private val completedWorkoutRepository: CompletedWorkoutRepository,
     private val completedWorkoutsAndExercisesRepository: CompletedWorkoutsAndExercisesRepository,
     private val completedExerciseRepository: CompletedExerciseRepository
@@ -40,21 +43,5 @@ class CompletedWorkoutsViewModel(
             workoutName = completedExerciseRepository.getExerciseName(baseCompletedWorkout.exerciseId)
         }
         return workoutName
-    }
-}
-
-class CompletedWorkoutsViewModelFactory(
-    private val completedWorkoutRepository: CompletedWorkoutRepository,
-    private val completedWorkoutsAndExercisesRepository: CompletedWorkoutsAndExercisesRepository,
-    private val completedExerciseRepository: CompletedExerciseRepository
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(CompletedWorkoutsViewModel::class.java) -> {
-                CompletedWorkoutsViewModel(completedWorkoutRepository, completedWorkoutsAndExercisesRepository, completedExerciseRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }

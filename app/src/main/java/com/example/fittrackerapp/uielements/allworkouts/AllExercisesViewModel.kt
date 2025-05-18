@@ -1,26 +1,29 @@
 package com.example.fittrackerapp.uielements.allworkouts
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AllExercisesViewModel(
-    reason: String?,
+@HiltViewModel
+class AllExercisesViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
-    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository
+    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
 ): ViewModel() {
 
     val _exercisesList = MutableStateFlow<List<BaseWorkout>>(emptyList())
     val exercisesList: StateFlow<List<BaseWorkout>> = _exercisesList
+
+    val reason: String? get() = savedStateHandle["reason"]
 
     init {
         if (reason == "exerciseAdding") {
@@ -38,22 +41,6 @@ class AllExercisesViewModel(
         val exerciseToChange = exercise.copy(isUsed = true)
         viewModelScope.launch {
             exerciseRepository.update(exerciseToChange)
-        }
-    }
-}
-
-class AllExercisesViewModelFactory(
-    private val reason: String?,
-    private val exerciseRepository: ExerciseRepository,
-    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(AllExercisesViewModel::class.java) -> {
-                AllExercisesViewModel(reason, exerciseRepository, workoutsAndExercisesRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

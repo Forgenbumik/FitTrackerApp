@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,7 +29,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,7 +36,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,15 +48,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
-import com.example.fittrackerapp.App
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.R
 import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import com.example.fittrackerapp.uielements.FileIcon
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import java.io.File
@@ -66,13 +60,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.font.FontWeight
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.uielements.completedworkouts.CompletedWorkoutsActivity
-import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutViewModel
 import com.example.fittrackerapp.uielements.main.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class CompletedWorkoutActivity: ComponentActivity()  {
-    private lateinit var viewModel: CompletedWorkoutViewModel
+    private val viewModel: CompletedWorkoutViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,17 +80,6 @@ class CompletedWorkoutActivity: ComponentActivity()  {
                 }
             }
         }
-
-        val app = application as App
-
-        val completedWorkoutId = intent.getLongExtra("completedWorkoutId", -1)
-
-        val completedWorkoutRepository = CompletedWorkoutRepository(app.appDatabase.completedWorkoutDao())
-        val completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
-
-        val factory = CompletedWorkoutViewModelFactory(completedWorkoutId, completedWorkoutRepository, completedExerciseRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(CompletedWorkoutViewModel::class.java)
     }
 
     fun onExerciseClick(completedExercise: CompletedExercise, exerciseName: String) {

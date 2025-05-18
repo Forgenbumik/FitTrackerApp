@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExercise
@@ -20,17 +20,19 @@ import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
-class ExecutingWorkoutViewModel (
-    private val workoutId: Long,
-    exerciseId: Long,
+class ExecutingWorkoutViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
     private val workoutDetailRepository: WorkoutDetailRepository,
     private val setsRepository: SetRepository,
@@ -39,7 +41,10 @@ class ExecutingWorkoutViewModel (
     private val lastWorkoutRepository: LastWorkoutRepository
 ): ViewModel() {
 
-    private var completedWorkout = CompletedWorkout(workoutId = workoutId)
+    private val workoutId: Long? get() = savedStateHandle["workoutId"]
+    private val firstDetailId: Long? get() = savedStateHandle["detailId"]
+
+    private var completedWorkout = CompletedWorkout(workoutId = workoutId!!)
 
     var completedWorkoutId = 0L
 
@@ -50,13 +55,12 @@ class ExecutingWorkoutViewModel (
 
     private var currentExecExercise: CompletedExercise? = null
 
-    private var currentExecExerciseId = exerciseId
+
 
     private val _nextExercise = MutableStateFlow(WorkoutDetail())
     val nextExercise: StateFlow<WorkoutDetail> = _nextExercise
 
-    private val _currentSet: MutableStateFlow<Set> = MutableStateFlow(Set())
-    val currentSet: StateFlow<Set> = _currentSet
+    private var currentSet = Set()
 
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
@@ -74,10 +78,10 @@ class ExecutingWorkoutViewModel (
 
     private var exerciseSeconds = 0
 
-    private var exerciseRestSeconds = 0
-
     private val _stringExerciseTime = MutableStateFlow("00:00")
     val stringExerciseTime: StateFlow<String> = _stringExerciseTime
+
+    private var exerciseRestSeconds = 0
 
     private var setSeconds = 0
 
@@ -107,8 +111,8 @@ class ExecutingWorkoutViewModel (
     private suspend fun runWorkout() {
         completedWorkoutId = completedWorkoutRepository.insert(completedWorkout)
         completedWorkout = completedWorkout.copy(id = completedWorkoutId)
-        val details = workoutDetailRepository.getByWorkoutId(workoutId).toMutableList()
-        val firstExercise = details.first { it.exerciseId == currentExecExerciseId }
+        val details = workoutDetailRepository.getByWorkoutId(workoutId!!).toMutableList()
+        val firstExercise = details.first { it.id == firstDetailId }
         details.remove(firstExercise)
         details.add(0, firstExercise)
         for (i in 0..(details.size-1)) {
@@ -202,7 +206,7 @@ class ExecutingWorkoutViewModel (
             }
         }
         currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId)
-        currentExecExerciseId = completedExerciseRepository.insert(currentExecExercise!!)
+        val currentExecExerciseId = completedExerciseRepository.insert(currentExecExercise!!)
         currentExecExercise = currentExecExercise?.copy(id = currentExecExerciseId)
         _currentExercise.value = exerciseRepository.getById(detail.exerciseId)!!
 
@@ -211,12 +215,12 @@ class ExecutingWorkoutViewModel (
                 && workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                _currentSet.value = Set(0, currentExecExerciseId, setSeconds, detail.reps, 0.0, 0, i)
-                val setId = setsRepository.insert(_currentSet.value)
-                _currentSet.value = _currentSet.value.copy(id = setId)
-                _setList.add(_currentSet.value)
+                currentSet = Set(0, currentExecExerciseId, setSeconds, detail.reps, 0.0, 0, i)
+                val setId = setsRepository.insert(currentSet)
+                currentSet = currentSet.copy(id = setId)
+                _setList.add(currentSet)
                 runRestTimer(setId, detail.restDuration)
-                _currentSet.value = _currentSet.value.copy(restDuration = restSeconds)
+                currentSet = currentSet.copy(restDuration = restSeconds)
                 restSeconds = 0
             }
         }
@@ -337,28 +341,5 @@ class ExecutingWorkoutViewModel (
 
     fun setChangingSet(set: Set?) {
         _changingSet.value = set
-    }
-}
-
-class ExecutingWorkoutViewModelFactory(
-    private val workoutId: Long,
-    private val exerciseId: Long,
-    private val exerciseRepository: ExerciseRepository,
-    private val workoutDetailRepository: WorkoutDetailRepository,
-    private val setsRepository: SetRepository,
-    private val completedWorkoutRepository: CompletedWorkoutRepository,
-    private val completedExerciseRepository: CompletedExerciseRepository,
-    private val lastWorkoutRepository: LastWorkoutRepository
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(ExecutingWorkoutViewModel::class.java) -> {
-                ExecutingWorkoutViewModel(workoutId, exerciseId, exerciseRepository, workoutDetailRepository,
-                    setsRepository, completedWorkoutRepository,
-                    completedExerciseRepository, lastWorkoutRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }

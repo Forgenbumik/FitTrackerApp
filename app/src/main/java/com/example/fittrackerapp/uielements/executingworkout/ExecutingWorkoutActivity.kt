@@ -3,10 +3,10 @@ package com.example.fittrackerapp.uielements.executingworkout
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.background
@@ -49,36 +49,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.fittrackerapp.App
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
-import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 
+@AndroidEntryPoint
 class ExecutingWorkoutActivity : ComponentActivity() {
-    private lateinit var viewModel: ExecutingWorkoutViewModel
+    private val viewModel: ExecutingWorkoutViewModel by viewModels()
 
     private var workoutName = ""
 
@@ -99,28 +91,6 @@ class ExecutingWorkoutActivity : ComponentActivity() {
                 }
             }
         }
-
-        val app = application as App
-
-        val workoutId = intent.getLongExtra("workoutId", -1)
-        val detailId = intent.getLongExtra("detailId", -1)
-
-        if (workoutId == -1L) {
-            Log.e("WorkoutViewModel", "Ошибка: workoutId не передан в Intent!")
-        }
-
-        val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
-        val setsRepository = SetRepository(app.appDatabase.setDao())
-        val workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
-        val completedWorkoutRepository = CompletedWorkoutRepository(app.appDatabase.completedWorkoutDao())
-        val completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
-        val lastWorkoutRepository = LastWorkoutRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.workoutDao(), app.appDatabase.exerciseDao())
-
-        val factory = ExecutingWorkoutViewModelFactory(workoutId, detailId, exerciseRepository, workoutDetailRepository,
-            setsRepository, completedWorkoutRepository,
-            completedExerciseRepository, lastWorkoutRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(ExecutingWorkoutViewModel::class.java)
     }
 
     @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")

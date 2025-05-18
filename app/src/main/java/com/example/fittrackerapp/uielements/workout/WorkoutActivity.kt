@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -48,10 +48,12 @@ import com.example.fittrackerapp.entities.WorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class WorkoutActivity: ComponentActivity() {
 
-    private lateinit var viewModel: WorkoutViewModel
+    private val viewModel: WorkoutViewModel by viewModels()
 
     var workoutId = 0L
     var workoutName = ""
@@ -63,35 +65,20 @@ class WorkoutActivity: ComponentActivity() {
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(modifier = Modifier.padding(innerPadding), workoutName, viewModel, ::onBackClick, ::onExerciseClick)
+                    MainScreen(modifier = Modifier.padding(innerPadding), workoutName, ::onBackClick, ::onExerciseClick)
                 }
             }
         }
-
-        val app = application as App
-
-
         workoutId = intent.getLongExtra("workoutId", -1)
         workoutName = intent.getStringExtra("workoutName") ?: "Тренировка"
-
-        if (workoutId == -1L) {
-            Log.e("WorkoutViewModel", "Ошибка: workoutId не передан в Intent!")
-        }
-
-        val workoutRepository = WorkoutRepository(app.appDatabase.workoutDao())
-        val workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
-
-        val factory = WorkoutViewModelFactory(workoutId, workoutName, workoutRepository, workoutDetailRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(WorkoutViewModel::class.java)
     }
 
-    fun onExerciseClick(exercise: WorkoutDetail) {
+    fun onExerciseClick(workoutDetail: WorkoutDetail) {
         val intent = Intent(this, ExecutingWorkoutActivity::class.java).apply {
             putExtra("workoutId", workoutId)
             putExtra("workoutName", workoutName)
-            putExtra("detailId", exercise.exerciseId)
-            putExtra("exerciseName", exercise.exerciseName)
+            putExtra("detailId", workoutDetail.id)
+            putExtra("exerciseName", workoutDetail.exerciseName)
         }
         startActivity(intent)
     }
@@ -107,9 +94,9 @@ class WorkoutActivity: ComponentActivity() {
 fun MainScreen(
     modifier: Modifier = Modifier,
     workoutName: String,
-    viewModel: WorkoutViewModel = viewModel(),
     onBackClick: () -> Unit,
-    onExerciseClick: (WorkoutDetail) -> Unit
+    onExerciseClick: (WorkoutDetail) -> Unit,
+    viewModel: WorkoutViewModel = viewModel()
 ) {
     val exercises = viewModel.exercisesList.collectAsState()
 

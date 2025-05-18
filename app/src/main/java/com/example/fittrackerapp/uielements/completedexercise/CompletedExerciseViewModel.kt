@@ -4,22 +4,23 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
+import javax.inject.Inject
 
+@HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
-class CompletedExerciseViewModel(
-    private val completedExerciseId: Long,
+class CompletedExerciseViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val completedExerciseRepository: CompletedExerciseRepository,
     private val setRepository: SetRepository
 ): ViewModel() {
@@ -38,19 +39,23 @@ class CompletedExerciseViewModel(
     private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(Set())
     val changingSet: StateFlow<Set?> = _changingSet
 
+    val completedExerciseId: Long? get() = savedStateHandle["completedExerciseId"]
+
     init {
         viewModelScope.launch {
-            loadCompletedExercise()
+            completedExerciseId?.let { loadCompletedExercise(it) }
         }
         viewModelScope.launch {
-            setRepository.getByCompletedExerciseIdFlow(completedExerciseId).collect { newList ->
-                _setList.clear()
-                _setList.addAll(newList)
+            completedExerciseId?.let {
+                setRepository.getByCompletedExerciseIdFlow(it).collect { newList ->
+                    _setList.clear()
+                    _setList.addAll(newList)
+                }
             }
         }
     }
 
-    suspend fun loadCompletedExercise() {
+    suspend fun loadCompletedExercise(completedExerciseId: Long) {
         _completedExercise.value = completedExerciseRepository.getById(completedExerciseId)
     }
 
@@ -75,33 +80,5 @@ class CompletedExerciseViewModel(
         val minutes = secs / 60 % 60
         val hours = secs / 3600
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
-    }
-
-    fun getExerciseSetsNumber(): Int {
-        return _setList.size
-    }
-
-    fun getExerciseTotalReps(): Int {
-        var totalReps = 0
-        for (set in _setList) {
-            totalReps += set.reps
-        }
-        return totalReps
-    }
-}
-
-class CompletedExerciseViewModelFactory(
-    private val completedExerciseId: Long,
-    private val completedExerciseRepository: CompletedExerciseRepository,
-    private val setRepository: SetRepository
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(CompletedExerciseViewModel::class.java) -> {
-                CompletedExerciseViewModel(completedExerciseId, completedExerciseRepository, setRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }

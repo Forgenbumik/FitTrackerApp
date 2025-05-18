@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,25 +24,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModelProvider
-import com.example.fittrackerapp.App
-import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
-import com.example.fittrackerapp.entities.WorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
-import com.example.fittrackerapp.abstractclasses.repositories.CompletedWorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,10 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
 import com.example.fittrackerapp.entities.CompletedWorkout
 import com.example.fittrackerapp.ui.theme.DarkBlue
-import com.example.fittrackerapp.ui.theme.LightTeal
 import com.example.fittrackerapp.ui.theme.Teal
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
@@ -66,7 +55,7 @@ import com.example.fittrackerapp.uielements.main.MainActivity
 
 class CompletedWorkoutsActivity: ComponentActivity() {
 
-    private lateinit var viewModel: CompletedWorkoutsViewModel
+    private val viewModel: CompletedWorkoutsViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,16 +70,6 @@ class CompletedWorkoutsActivity: ComponentActivity() {
                 }
             }
         }
-
-        val app = application as App
-
-        val completedWorkoutRepository = CompletedWorkoutRepository(app.appDatabase.completedWorkoutDao())
-        val completedWorkoutsAndExercisesRepository = CompletedWorkoutsAndExercisesRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.completedWorkoutDao(), app.appDatabase.completedExerciseDao())
-        val completedExerciseRepository = CompletedExerciseRepository(app.appDatabase.completedExerciseDao())
-
-        val factory = CompletedWorkoutsViewModelFactory(completedWorkoutRepository, completedWorkoutsAndExercisesRepository, completedExerciseRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(CompletedWorkoutsViewModel::class.java)
     }
 
     fun onCompletedWorkoutClick(baseCompletedWorkout: BaseCompletedWorkout) {

@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -35,15 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.App
-import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.executingexercise.ExecutingExerciseActivity
@@ -51,7 +47,7 @@ import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
 
 class ExerciseActivity: ComponentActivity() {
 
-    lateinit var viewModel: ExerciseViewModel
+    private val viewModel: ExerciseViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,16 +61,6 @@ class ExerciseActivity: ComponentActivity() {
                 }
             }
         }
-
-        val exerciseId = intent.getLongExtra("exerciseId", 0)
-
-        val app = application as App
-
-        val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
-
-        val factory = ExerciseViewModelFactory(exerciseId, exerciseRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(ExerciseViewModel::class.java)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

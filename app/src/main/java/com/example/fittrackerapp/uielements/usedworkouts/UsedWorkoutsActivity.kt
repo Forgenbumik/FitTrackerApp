@@ -1,27 +1,24 @@
 package com.example.fittrackerapp.uielements.usedworkouts
 
 import android.content.Intent
-import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -35,12 +32,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,11 +61,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -78,28 +71,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.core.net.toUri
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.common.MediaItem
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
-import com.example.fittrackerapp.App
 import com.example.fittrackerapp.R
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
-import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
 import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.Workout
-import com.example.fittrackerapp.ui.theme.DarkerBackground
-import com.example.fittrackerapp.ui.theme.DeepTurquoise
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.ui.theme.LightTurquoise
 import com.example.fittrackerapp.uielements.FileIcon
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
@@ -107,10 +86,12 @@ import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActiv
 import com.example.fittrackerapp.uielements.exercise.ExerciseActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
 import com.example.fittrackerapp.uielements.workout.WorkoutActivity
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
+@AndroidEntryPoint
 class UsedWorkoutsActivity: ComponentActivity() {
-    private lateinit var viewModel: UsedWorkoutsViewModel
+    private val viewModel: UsedWorkoutsViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,16 +106,6 @@ class UsedWorkoutsActivity: ComponentActivity() {
                 }
             }
         }
-
-        val app = application as App
-
-        val workoutsAndExercisesRepository = WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao(), app.appDatabase.workoutDetailDao())
-
-        val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
-
-        val factory = UsedWorkoutsViewModelFactory(workoutsAndExercisesRepository, exerciseRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(UsedWorkoutsViewModel::class.java)
     }
 
     fun onPlusClick() {
@@ -147,10 +118,6 @@ class UsedWorkoutsActivity: ComponentActivity() {
             putExtra("workoutId", workoutId)
         }
         startActivity(intent)
-    }
-
-    fun deleteExerciseIcon(context: Context, exercise: Exercise) {
-        viewModel.deleteExerciseIcon(context, exercise)
     }
 
     fun onWorkoutClick(baseWorkout: BaseWorkout) {

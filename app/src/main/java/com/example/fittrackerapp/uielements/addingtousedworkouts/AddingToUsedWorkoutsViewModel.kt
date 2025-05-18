@@ -16,10 +16,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
 
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
-class AddingToUsedWorkoutsViewModel(
+class AddingToUsedWorkoutsViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository
 ): ViewModel() {
 

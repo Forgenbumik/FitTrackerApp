@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,10 +29,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -43,7 +42,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,33 +52,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.fittrackerapp.App
-import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
-import com.example.fittrackerapp.entities.WorkoutRepository
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.uielements.CenteredPicker
-import com.example.fittrackerapp.uielements.ClickableRow
-import com.example.fittrackerapp.uielements.FileIcon
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
-import com.example.fittrackerapp.uielements.main.MainActivity
 import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.io.File
 
 class CreatingWorkoutActivity: ComponentActivity() {
-    private lateinit var viewModel: CreatingWorkoutViewModel
+    private val viewModel: CreatingWorkoutViewModel by viewModels()
 
     var workoutId: Long = 0
     @RequiresApi(Build.VERSION_CODES.O)
@@ -95,18 +83,6 @@ class CreatingWorkoutActivity: ComponentActivity() {
                 }
             }
         }
-
-        val app = application as App
-
-        val workoutRepository = WorkoutRepository(app.appDatabase.workoutDao())
-        val workoutDetailRepository = WorkoutDetailRepository(app.appDatabase.workoutDetailDao())
-        val exerciseRepository = ExerciseRepository(app.appDatabase.exerciseDao())
-
-        workoutId = intent.getLongExtra("workoutId", -1)
-
-        val factory = CreatingWorkoutViewModelFactory(workoutId, workoutRepository, workoutDetailRepository, exerciseRepository)
-
-        viewModel = ViewModelProvider(this, factory).get(CreatingWorkoutViewModel::class.java)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -191,7 +167,7 @@ fun MainScreen(
             )
 
             // Поле для ввода названия тренировки
-            NameField(workout.value.name)
+            workout.value?.let { NameField(it.name) }
 
             // Список упражнений
             ExercisesList(

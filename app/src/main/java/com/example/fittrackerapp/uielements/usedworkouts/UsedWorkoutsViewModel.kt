@@ -13,13 +13,16 @@ import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercis
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.Workout
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
 
-class UsedWorkoutsViewModel(
+@HiltViewModel
+class UsedWorkoutsViewModel @Inject constructor(
     private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
     private val exerciseRepository: ExerciseRepository
 ): ViewModel() {

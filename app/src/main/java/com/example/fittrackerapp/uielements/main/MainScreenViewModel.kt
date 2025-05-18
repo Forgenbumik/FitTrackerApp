@@ -12,11 +12,14 @@ import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainScreenViewModel(
+@HiltViewModel
+class MainScreenViewModel @Inject constructor(
     private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
     private val lastWorkoutRepository: LastWorkoutRepository,
     private val completedExerciseRepository: CompletedExerciseRepository

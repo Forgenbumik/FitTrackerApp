@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,11 +62,13 @@ import com.example.fittrackerapp.uielements.workout.WorkoutActivity
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import com.example.fittrackerapp.uielements.completedworkouts.CompletedWorkoutsActivity
 import com.example.fittrackerapp.uielements.exercise.ExerciseActivity
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: MainScreenViewModel
+    private val viewModel: MainScreenViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,16 +86,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        val app = application as App
-
-        val factory = MainScreenModelFactory(
-            WorkoutsAndExercisesRepository(app.appDatabase.workoutDao(), app.appDatabase.exerciseDao(), app.appDatabase.workoutDetailDao()),
-            LastWorkoutRepository(app.appDatabase.lastWorkoutDao(), app.appDatabase.workoutDao(), app.appDatabase.exerciseDao()),
-            CompletedExerciseRepository(app.appDatabase.completedExerciseDao()),
-            )
-
-        viewModel = ViewModelProvider(this, factory).get(MainScreenViewModel::class.java)
     }
 
     fun onFavouriteWorkoutClick(workout: BaseWorkout) {
