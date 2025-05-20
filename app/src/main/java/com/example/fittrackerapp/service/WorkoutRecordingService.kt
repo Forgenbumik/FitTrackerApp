@@ -20,6 +20,7 @@ import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,7 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
+@AndroidEntryPoint
 class WorkoutRecordingService: Service() {
 
     companion object {
