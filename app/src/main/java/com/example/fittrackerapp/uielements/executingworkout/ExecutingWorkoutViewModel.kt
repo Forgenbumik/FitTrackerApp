@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingWorkoutViewModel @Inject constructor(
@@ -35,7 +36,7 @@ class ExecutingWorkoutViewModel @Inject constructor(
     val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
 
     var completedWorkoutId = 0L
-    private var currentExerciseId = 0L
+    private val currentExerciseId = MutableStateFlow(0L)
 
     private val _serviceCommands = MutableSharedFlow<ServiceCommand>()
 
@@ -68,11 +69,19 @@ class ExecutingWorkoutViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            setsRepository.getByCompletedExerciseIdFlow(currentExerciseId)
+            setsRepository.getByCompletedExerciseIdFlow(currentExerciseId.value)
                 .collect { newSets ->
                     _setList.clear()
                     _setList.addAll(newSets)
                 }
+        }
+        viewModelScope.launch {
+            currentExerciseId.flatMapLatest { id ->
+                setsRepository.getByCompletedExerciseIdFlow(id)
+            }.collect { newSets ->
+                _setList.clear()
+                _setList.addAll(newSets)
+            }
         }
         viewModelScope.launch {
             WorkoutRecordingCommunicator.completedWorkoutId.collectLatest {
@@ -80,9 +89,9 @@ class ExecutingWorkoutViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            WorkoutRecordingCommunicator.currentExercise.collectLatest {
+            WorkoutRecordingCommunicator.currentExecExercise.collectLatest {
                 if (it != null) {
-                    currentExerciseId = it.id
+                    currentExerciseId.value = it.id
                 }
             }
         }
