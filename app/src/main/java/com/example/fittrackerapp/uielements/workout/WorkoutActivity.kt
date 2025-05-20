@@ -45,6 +45,7 @@ import com.example.fittrackerapp.App
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.entities.WorkoutRepository
+import com.example.fittrackerapp.service.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
@@ -73,7 +74,15 @@ class WorkoutActivity: ComponentActivity() {
         workoutName = intent.getStringExtra("workoutName") ?: "Тренировка"
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun onExerciseClick(workoutDetail: WorkoutDetail) {
+        val serviceIntent = Intent(this, WorkoutRecordingService::class.java).apply {
+            putExtra("workoutId", workoutId)
+            putExtra("workoutName", workoutName)
+            putExtra("detailId", workoutDetail.id)
+            putExtra("exerciseName", workoutDetail.exerciseName)
+        }
+        startForegroundService(serviceIntent)
         val intent = Intent(this, ExecutingWorkoutActivity::class.java).apply {
             putExtra("workoutId", workoutId)
             putExtra("workoutName", workoutName)
