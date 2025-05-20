@@ -1,21 +1,13 @@
 package com.example.fittrackerapp.uielements.executingworkout
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.LastWorkoutRepository
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.WorkoutDetail
@@ -23,12 +15,12 @@ import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.service.ServiceCommand
 import com.example.fittrackerapp.service.WorkoutRecordingCommunicator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,17 +39,11 @@ class ExecutingWorkoutViewModel @Inject constructor(
 
     private val _serviceCommands = MutableSharedFlow<ServiceCommand>()
 
-    private val _currentExerciseName = MutableStateFlow("")
-    val currentExerciseName: StateFlow<String> = _currentExerciseName
-
-    private val _nextExercise = MutableStateFlow(WorkoutDetail(0, 0, 0, 0, "", 0, 0, 0, false))
+    private val _nextExercise = MutableStateFlow(WorkoutDetail())
     val nextExercise: StateFlow<WorkoutDetail> = _nextExercise
 
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
-
-    private val _stringWorkoutTime = MutableStateFlow("00:00")
-    val stringWorkoutTime: StateFlow<String> = _stringWorkoutTime
 
     private val _stringExerciseTime = MutableStateFlow("00:00")
     val stringExerciseTime: StateFlow<String> = _stringExerciseTime
@@ -76,6 +62,9 @@ class ExecutingWorkoutViewModel @Inject constructor(
 
     private val _lastCondition = MutableStateFlow(WorkoutCondition.PAUSE)
     val lastCondition: StateFlow<WorkoutCondition> = _lastCondition
+
+    private val _currentExercise = MutableStateFlow(Exercise())
+    val currentExercise: StateFlow<Exercise?> = _currentExercise
 
     init {
         viewModelScope.launch {
@@ -98,11 +87,6 @@ class ExecutingWorkoutViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            WorkoutRecordingCommunicator.currentExerciseName.collectLatest {
-                _currentExerciseName.value = it
-            }
-        }
-        viewModelScope.launch {
             WorkoutRecordingCommunicator.workoutCondition.collectLatest {
                 _workoutCondition.value = it
             }
@@ -110,11 +94,6 @@ class ExecutingWorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             WorkoutRecordingCommunicator.lastCondition.collectLatest {
                 _lastCondition.value = it
-            }
-        }
-        viewModelScope.launch {
-            WorkoutRecordingCommunicator.workoutSeconds.collectLatest {
-                updateWorkoutTime(it)
             }
         }
         viewModelScope.launch {
@@ -148,10 +127,6 @@ class ExecutingWorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             _serviceCommands.emit(command)
         }
-    }
-
-    fun updateWorkoutTime(secs: Int) {
-        _stringWorkoutTime.value = formatTime(secs)
     }
 
     fun updateExerciseTime(secs: Int) {

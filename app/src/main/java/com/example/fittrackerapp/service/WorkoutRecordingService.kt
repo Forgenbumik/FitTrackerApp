@@ -40,11 +40,11 @@ class WorkoutRecordingService: Service() {
     }
 
     // --- Репозитории ---
-    @Inject private lateinit var completedWorkoutRepository: CompletedWorkoutRepository
-    @Inject private lateinit var workoutDetailRepository: WorkoutDetailRepository
-    @Inject private lateinit var setsRepository: SetRepository
-    @Inject private lateinit var lastWorkoutRepository: LastWorkoutRepository
-    @Inject private lateinit var completedExerciseRepository: CompletedExerciseRepository
+    @Inject lateinit var completedWorkoutRepository: CompletedWorkoutRepository
+    @Inject lateinit var workoutDetailRepository: WorkoutDetailRepository
+    @Inject lateinit var setsRepository: SetRepository
+    @Inject lateinit var lastWorkoutRepository: LastWorkoutRepository
+    @Inject lateinit var completedExerciseRepository: CompletedExerciseRepository
 
     // --- Сервисные переменные ---
     private var isTimerStarted = false
@@ -144,8 +144,6 @@ class WorkoutRecordingService: Service() {
     val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
 
     private var currentExecExercise: CompletedExercise? = null
-
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runWorkout() {

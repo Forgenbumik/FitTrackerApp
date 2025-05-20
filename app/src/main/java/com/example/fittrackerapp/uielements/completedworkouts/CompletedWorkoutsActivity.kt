@@ -52,7 +52,9 @@ import com.example.fittrackerapp.ui.theme.Teal
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class CompletedWorkoutsActivity: ComponentActivity() {
 
     private val viewModel: CompletedWorkoutsViewModel by viewModels()

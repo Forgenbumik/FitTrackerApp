@@ -223,16 +223,3 @@ class UsedWorkoutsViewModel @Inject constructor(
         }
     }
 }
-
-class UsedWorkoutsViewModelFactory(
-    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
-    private val exerciseRepository: ExerciseRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(UsedWorkoutsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return UsedWorkoutsViewModel(workoutsAndExercisesRepository, exerciseRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}

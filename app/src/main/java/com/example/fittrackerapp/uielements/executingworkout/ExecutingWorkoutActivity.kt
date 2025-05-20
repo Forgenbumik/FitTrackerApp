@@ -154,8 +154,6 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
                                 formatTime: (Int) -> String,
                                 viewModel: ExecutingWorkoutViewModel = viewModel(),) {
 
-    val stringWorkoutTime = viewModel.stringWorkoutTime.collectAsState().value
-
     val currentExercise = viewModel.currentExercise.collectAsState().value
 
     val stringExerciseTime = viewModel.stringExerciseTime.collectAsState().value
