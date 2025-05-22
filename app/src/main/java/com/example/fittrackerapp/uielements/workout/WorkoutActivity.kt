@@ -3,7 +3,6 @@ package com.example.fittrackerapp.uielements.workout
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -32,20 +31,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.App
 import com.example.fittrackerapp.entities.WorkoutDetail
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
-import com.example.fittrackerapp.entities.WorkoutRepository
-import com.example.fittrackerapp.service.WorkoutRecordingService
+import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
@@ -80,14 +78,12 @@ class WorkoutActivity: ComponentActivity() {
             putExtra("workoutId", workoutId)
             putExtra("workoutName", workoutName)
             putExtra("detailId", workoutDetail.id)
-            putExtra("exerciseName", workoutDetail.exerciseName)
         }
-        startForegroundService(serviceIntent)
+        this.startForegroundService(serviceIntent)
         val intent = Intent(this, ExecutingWorkoutActivity::class.java).apply {
             putExtra("workoutId", workoutId)
             putExtra("workoutName", workoutName)
             putExtra("detailId", workoutDetail.id)
-            putExtra("exerciseName", workoutDetail.exerciseName)
         }
         startActivity(intent)
     }
@@ -176,6 +172,13 @@ fun ExerciseItem(
     onClick: (WorkoutDetail) -> Unit,
     viewModel: WorkoutViewModel = viewModel()
 ) {
+
+    val exerciseName = remember { mutableStateOf("") }
+
+    LaunchedEffect(workoutDetail) {
+        exerciseName.value = viewModel.getExerciseName(workoutDetail.exerciseId)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -184,7 +187,7 @@ fun ExerciseItem(
             .padding(12.dp)
     ) {
         Text(
-            text = workoutDetail.exerciseName,
+            text = exerciseName.value,
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             color = Color.White // Белый цвет для текста

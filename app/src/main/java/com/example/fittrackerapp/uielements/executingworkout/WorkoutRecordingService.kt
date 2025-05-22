@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.service
+package com.example.fittrackerapp.uielements.executingworkout
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,7 +9,6 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.entities.CompletedExerciseRepository
@@ -20,6 +19,7 @@ import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import com.example.fittrackerapp.service.ServiceCommand
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,15 +56,14 @@ class WorkoutRecordingService: Service() {
     private var workoutId = 0L
     private var firstDetailId = 0L
     private lateinit var completedWorkout: CompletedWorkout
-    private lateinit var currentSet: Set
-    private var currentExerciseId = 0L
+    private var currentSet = Set()
     private var setList = mutableListOf<Set>()
     private var exerciseJob: Job? = null
-    private var isLastWorkoutInserted = false
     private val _stringWorkoutTime = MutableStateFlow("00:00")
     val stringWorkoutTime: StateFlow<String> = _stringWorkoutTime
 
     // --- Коммуникатор ---
+    private val _serviceCommands = WorkoutRecordingCommunicator.serviceCommands
     private val _workoutCondition = WorkoutRecordingCommunicator.workoutCondition
     private val _workoutSeconds = WorkoutRecordingCommunicator.workoutSeconds
     private val _exerciseSeconds = WorkoutRecordingCommunicator.exerciseSeconds
@@ -73,6 +72,8 @@ class WorkoutRecordingService: Service() {
     private var _exerciseRestSeconds = WorkoutRecordingCommunicator.exerciseRestSeconds
     private val _changingSet = WorkoutRecordingCommunicator.changingSet
     private val _nextExercise = WorkoutRecordingCommunicator.nextExercise
+    private val _isSaveCompleted = WorkoutRecordingCommunicator.isSaveCompleted
+    private val _currentExecExerciseId = WorkoutRecordingCommunicator.currentExecExerciseId
 
     private val _lastCondition = WorkoutRecordingCommunicator.lastCondition
 
@@ -88,14 +89,13 @@ class WorkoutRecordingService: Service() {
         firstDetailId = intent?.getLongExtra("detailId", -1) ?: -1
         if (!isTimerStarted) {
             completedWorkout = CompletedWorkout(workoutId =  workoutId)
+            observeServiceCommands()
             serviceScope.launch {
                 launch { runWorkoutTimer() }
                 launch { runWorkout() }
             }
         }
         isTimerStarted = true
-        observeServiceCommands()
-
         return START_STICKY
     }
 
@@ -122,7 +122,8 @@ class WorkoutRecordingService: Service() {
 
     private fun observeServiceCommands() {
         serviceScope.launch {
-            WorkoutRecordingCommunicator.serviceCommands.collect { command ->
+            for (command in _serviceCommands) {
+                Log.d("Service", "Received command: $command")
                 when (command) {
                     is ServiceCommand.SetCommand -> setCondition(WorkoutCondition.SET)
                     is ServiceCommand.RestCommand -> setCondition(WorkoutCondition.REST)
@@ -140,9 +141,6 @@ class WorkoutRecordingService: Service() {
     // -------------------------------------
 
     var completedWorkoutId = 0L
-
-    val _isSaveCompleted = MutableStateFlow(false)
-    val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
 
     private var currentExecExercise: CompletedExercise? = null
 
@@ -243,21 +241,21 @@ class WorkoutRecordingService: Service() {
             }
         }
         currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId)
-        val currentExecExerciseId = completedExerciseRepository.insert(currentExecExercise!!)
-        currentExecExercise = currentExecExercise?.copy(id = currentExecExerciseId)
+        _currentExecExerciseId.value = completedExerciseRepository.insert(currentExecExercise!!)
+        currentExecExercise = currentExecExercise?.copy(id = _currentExecExerciseId.value!!)
 
         for (i in 1..detail.setsNumber) {
             if (_workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && _workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                currentSet = Set(completedExerciseId = currentExecExerciseId,
-                    duration =_setSeconds.value, reps = currentSet.reps, setNumber = i)
+                currentSet = Set(completedExerciseId = _currentExecExerciseId.value!!,
+                    duration =_setSeconds.value, reps = detail.reps, setNumber = i)
                 val setId = setsRepository.insert(currentSet)
                 currentSet = currentSet.copy(id = setId)
-                setList.add(currentSet)
                 runRestTimer(setId, detail.restDuration)
                 currentSet = currentSet.copy(restDuration = _restSeconds.value)
+                setsRepository.update(currentSet)
                 _restSeconds.value = 0
             }
         }

@@ -8,11 +8,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.entities.Exercise
 import com.example.fittrackerapp.entities.ExerciseRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 class ExerciseViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,

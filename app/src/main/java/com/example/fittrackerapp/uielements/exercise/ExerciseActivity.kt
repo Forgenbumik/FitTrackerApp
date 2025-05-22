@@ -44,7 +44,9 @@ import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.executingexercise.ExecutingExerciseActivity
 import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class ExerciseActivity: ComponentActivity() {
 
     private val viewModel: ExerciseViewModel by viewModels()

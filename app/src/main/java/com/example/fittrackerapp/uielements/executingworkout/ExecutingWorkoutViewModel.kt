@@ -1,6 +1,7 @@
 package com.example.fittrackerapp.uielements.executingworkout
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -8,15 +9,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.Exercise
+import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.SetRepository
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.entities.WorkoutDetail
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.service.ServiceCommand
-import com.example.fittrackerapp.service.WorkoutRecordingCommunicator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -28,20 +27,16 @@ import javax.inject.Inject
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingWorkoutViewModel @Inject constructor(
-    private val workoutDetailRepository: WorkoutDetailRepository,
+    private val exerciseRepository: ExerciseRepository,
     private val setsRepository: SetRepository,
 ): ViewModel() {
 
-    private val _isSaveCompleted = MutableStateFlow(false)
-    val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
+    val isSaveCompleted: StateFlow<Boolean> = WorkoutRecordingCommunicator.isSaveCompleted
 
     var completedWorkoutId = 0L
-    private val currentExerciseId = MutableStateFlow(0L)
+    private val currentExecExerciseId = WorkoutRecordingCommunicator.currentExecExerciseId
 
-    private val _serviceCommands = MutableSharedFlow<ServiceCommand>()
-
-    private val _nextExercise = MutableStateFlow(WorkoutDetail())
-    val nextExercise: StateFlow<WorkoutDetail> = _nextExercise
+    val nextExercise: StateFlow<WorkoutDetail?> = WorkoutRecordingCommunicator.nextExercise
 
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
@@ -55,54 +50,35 @@ class ExecutingWorkoutViewModel @Inject constructor(
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
 
-    private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(null)
-    val changingSet: StateFlow<Set?> = _changingSet
-
-    private val _workoutCondition = MutableStateFlow(WorkoutCondition.SET)
-    val workoutCondition: StateFlow<WorkoutCondition> = _workoutCondition
-
-    private val _lastCondition = MutableStateFlow(WorkoutCondition.PAUSE)
-    val lastCondition: StateFlow<WorkoutCondition> = _lastCondition
+    val changingSet: StateFlow<Set?> = WorkoutRecordingCommunicator.changingSet
+    val workoutCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.workoutCondition
+    val lastCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.lastCondition
 
     private val _currentExercise = MutableStateFlow(Exercise())
     val currentExercise: StateFlow<Exercise?> = _currentExercise
 
     init {
-        viewModelScope.launch {
-            setsRepository.getByCompletedExerciseIdFlow(currentExerciseId.value)
-                .collect { newSets ->
+        if (currentExecExerciseId.value != null && currentExecExerciseId.value != 0L) {
+            viewModelScope.launch {
+                setsRepository.getByCompletedExerciseIdFlow(currentExecExerciseId.value!!)
+                    .collect { newSets ->
+                        _setList.clear()
+                        _setList.addAll(newSets)
+                    }
+            }
+            viewModelScope.launch {
+                currentExecExerciseId.flatMapLatest { id ->
+                    setsRepository.getByCompletedExerciseIdFlow(id!!)
+                }.collect { newSets ->
                     _setList.clear()
                     _setList.addAll(newSets)
                 }
-        }
-        viewModelScope.launch {
-            currentExerciseId.flatMapLatest { id ->
-                setsRepository.getByCompletedExerciseIdFlow(id)
-            }.collect { newSets ->
-                _setList.clear()
-                _setList.addAll(newSets)
             }
         }
+
         viewModelScope.launch {
             WorkoutRecordingCommunicator.completedWorkoutId.collectLatest {
                 completedWorkoutId = it
-            }
-        }
-        viewModelScope.launch {
-            WorkoutRecordingCommunicator.currentExecExercise.collectLatest {
-                if (it != null) {
-                    currentExerciseId.value = it.id
-                }
-            }
-        }
-        viewModelScope.launch {
-            WorkoutRecordingCommunicator.workoutCondition.collectLatest {
-                _workoutCondition.value = it
-            }
-        }
-        viewModelScope.launch {
-            WorkoutRecordingCommunicator.lastCondition.collectLatest {
-                _lastCondition.value = it
             }
         }
         viewModelScope.launch {
@@ -120,21 +96,12 @@ class ExecutingWorkoutViewModel @Inject constructor(
                 updateRestTime(it)
             }
         }
-        viewModelScope.launch {
-
-        }
-        viewModelScope.launch {
-            WorkoutRecordingCommunicator.nextExercise.collectLatest {
-                if (it != null) {
-                    _nextExercise.value = it
-                }
-            }
-        }
     }
 
     fun sendCommand(command: ServiceCommand) {
+        Log.d("ViewModel", "sendCommand: $command")
         viewModelScope.launch {
-            _serviceCommands.emit(command)
+            WorkoutRecordingCommunicator.serviceCommands.send(command)
         }
     }
 
@@ -151,23 +118,20 @@ class ExecutingWorkoutViewModel @Inject constructor(
     }
 
     fun setCondition(condition: WorkoutCondition) {
-        if (_workoutCondition.value != condition) {
-            sendCommand(ServiceCommand.SetCommand)
+        if (workoutCondition.value != condition) {
+            when (condition) {
+                WorkoutCondition.SET -> sendCommand(ServiceCommand.SetCommand)
+                WorkoutCondition.REST -> sendCommand(ServiceCommand.RestCommand)
+                WorkoutCondition.PAUSE -> sendCommand(ServiceCommand.PauseCommand)
+                WorkoutCondition.REST_AFTER_EXERCISE -> sendCommand(ServiceCommand.RestAfterExerciseCommand)
+                WorkoutCondition.END -> sendCommand(ServiceCommand.EndCommand)
+            }
         }
     }
 
     fun setChangingSet(set: Set?) {
         run {
             sendCommand(ServiceCommand.SetChangingSetCommand(set))
-        }
-    }
-
-    fun setNextExerciseById(workoutDetailId: Long) {
-        viewModelScope.launch {
-            val workoutDetail = workoutDetailRepository.getById(workoutDetailId)
-            if (workoutDetail != null) {
-                _nextExercise.value = workoutDetail
-            }
         }
     }
 
@@ -182,5 +146,9 @@ class ExecutingWorkoutViewModel @Inject constructor(
         run {
             sendCommand(ServiceCommand.UpdateSetCommand(set, reps, weight))
         }
+    }
+
+    suspend fun getExerciseName(exerciseId: Long): String {
+        return exerciseRepository.getExerciseName(exerciseId)
     }
 }
