@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.fittrackerapp.entities.ExerciseRepository
 import com.example.fittrackerapp.entities.WorkoutDetail
 import com.example.fittrackerapp.entities.WorkoutDetailRepository
 import com.example.fittrackerapp.entities.WorkoutRepository
@@ -16,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class WorkoutViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val workoutDetailRepository: WorkoutDetailRepository
+    private val workoutDetailRepository: WorkoutDetailRepository,
+    private val exerciseRepository: ExerciseRepository
 ) : ViewModel() {
 
     private val workoutId: Long? get() = savedStateHandle["workoutId"]
@@ -41,5 +43,9 @@ class WorkoutViewModel @Inject constructor(
         val minutes = secs / 60
         val seconds = secs % 60
         return "%02d:%02d".format(minutes, seconds)
+    }
+
+    suspend fun getExerciseName(exerciseId: Long): String {
+        return exerciseRepository.getExerciseName(exerciseId)
     }
 }

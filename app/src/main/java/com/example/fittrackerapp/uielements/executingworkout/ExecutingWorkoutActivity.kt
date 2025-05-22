@@ -40,6 +40,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +62,6 @@ import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
-import com.example.fittrackerapp.uielements.main.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -87,7 +87,8 @@ class ExecutingWorkoutActivity : ComponentActivity() {
                         workoutName,
                         onEndClick = { onEndClick() },
                         setCondition = {condition -> setCondition(condition)},
-                        formatTime = {secs -> formatTime(secs)})
+                        formatTime = {secs -> formatTime(secs)},
+                        setChangingSet = {set -> setChangingSet(set)})
                 }
             }
         }
@@ -99,13 +100,10 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
         viewModel.setCondition(WorkoutCondition.END)
 
-        val intent = Intent(this, MainActivity::class.java)
-
         lifecycleScope.launch {
             viewModel.isSaveCompleted
                 .filter { it } // пропускаем, пока не станет true
                 .first()       // ждём первое значение true
-            startActivity(intent)
             finish()
             super.onBackPressed()
         }
@@ -126,8 +124,6 @@ class ExecutingWorkoutActivity : ComponentActivity() {
             startActivity(intent)
             finish()
         }
-
-
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -149,10 +145,11 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).background(Color(0xFF18181A)),
-                                workoutName: String, onEndClick: () -> Unit,
-                                setCondition: (WorkoutCondition) -> Unit,
-                                formatTime: (Int) -> String,
-                                viewModel: ExecutingWorkoutViewModel = viewModel(),) {
+               workoutName: String, onEndClick: () -> Unit,
+               setCondition: (WorkoutCondition) -> Unit,
+               formatTime: (Int) -> String,
+               setChangingSet: (Set) -> Unit,
+               viewModel: ExecutingWorkoutViewModel = viewModel()) {
 
     val currentExercise = viewModel.currentExercise.collectAsState().value
 
@@ -163,8 +160,6 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
     val stringRestTime = viewModel.stringRestTime.collectAsState()
 
     val workoutCondition = viewModel.workoutCondition.collectAsState().value
-
-    if (workoutCondition == WorkoutCondition.END) onEndClick()
 
     val lastCondition = viewModel.lastCondition.collectAsState().value
 
@@ -191,7 +186,7 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
                 VideoPlayerFromFile(file)
             }
 
-            SetsTable(setList, formatTime, isShowChangeWindow)
+            SetsTable(setList, formatTime, isShowChangeWindow, setChangingSet)
         }
 
         Text(stringExerciseTime)
@@ -211,9 +206,10 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>) {
+fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String,
+              isShowChangeWindow: MutableState<Boolean>, setChangingSet: (Set) -> Unit) {
     SetsTableHeaders()
-    SetsStrings(setList, formatTime, isShowChangeWindow)
+    SetsStrings(setList, formatTime, isShowChangeWindow, setChangingSet)
 }
 
 @Composable
@@ -235,7 +231,8 @@ fun SetsTableHeaders() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingWorkoutViewModel = viewModel()) {
+fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String,
+                isShowChangeWindow: MutableState<Boolean>, setChangingSet: (Set) -> Unit) {
 
     val setListValue = setList
 
@@ -260,7 +257,7 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                     .aspectRatio(2f)
                     .weight(1f), contentAlignment = Alignment.Center) {
                     IconButton(onClick = {
-                        viewModel.setChangingSet(setListValue[i])
+                        setChangingSet(setListValue[i])
                         isShowChangeWindow.value = true
                     }) {
                         Icon(
@@ -346,12 +343,21 @@ fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSel
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ExerciseInformation(
-    nextExercise: State<WorkoutDetail>,
+    nextExercise: State<WorkoutDetail?>,
     stringRestTime: State<String>,
-    formatTime: (Int) -> String
+    formatTime: (Int) -> String,
+    viewModel: ExecutingWorkoutViewModel = viewModel()
 ) {
+
+    val exerciseName = remember { mutableStateOf("") }
+
+    LaunchedEffect(nextExercise) {
+        exerciseName.value = viewModel.getExerciseName(nextExercise.value!!.exerciseId)
+    }
+
     val nextExerciseValue = nextExercise.value
     val stringRestTimeValue = stringRestTime.value
 
@@ -372,28 +378,29 @@ fun ExerciseInformation(
                 color = Color.White,
                 fontWeight = FontWeight.Medium
             )
-
             Text(
-                text = nextExerciseValue.exerciseName,
+                text = exerciseName.value,
                 fontSize = 24.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
-            if (nextExerciseValue.isRestManually) {
-                Text(
-                    text = "${nextExerciseValue.setsNumber} подходов, ${nextExerciseValue.reps} повт., отдых: вручную",
-                    fontSize = 18.sp,
-                    color = Color.LightGray,
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                Text(
-                    text = "${nextExerciseValue.setsNumber} подходов, ${nextExerciseValue.reps} повт., отдых: ${formatTime(nextExerciseValue.restDuration)}",
-                    fontSize = 18.sp,
-                    color = Color.LightGray,
-                    textAlign = TextAlign.Center
-                )
+            if (nextExerciseValue != null) {
+                if (nextExerciseValue.isRestManually) {
+                    Text(
+                        text = "${nextExerciseValue.setsNumber} подходов, ${nextExerciseValue.reps} повт., отдых: вручную",
+                        fontSize = 18.sp,
+                        color = Color.LightGray,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Text(
+                        text = "${nextExerciseValue.setsNumber} подходов, ${nextExerciseValue.reps} повт., отдых: ${formatTime(nextExerciseValue.restDuration)}",
+                        fontSize = 18.sp,
+                        color = Color.LightGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }

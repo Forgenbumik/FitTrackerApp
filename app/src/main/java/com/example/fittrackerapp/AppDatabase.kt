@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.fittrackerapp.entities.*
+import com.example.fittrackerapp.entities.Set
 
 @Database(
     entities = [
@@ -13,7 +14,7 @@ import com.example.fittrackerapp.entities.*
         CompletedWorkout::class,
         CompletedExercise::class,
         LastWorkout::class,
-        com.example.fittrackerapp.entities.Set::class,
+        Set::class,
         Type::class
     ], version = 1
 )

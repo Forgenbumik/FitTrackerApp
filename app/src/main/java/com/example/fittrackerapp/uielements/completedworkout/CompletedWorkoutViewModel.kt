@@ -37,17 +37,15 @@ class CompletedWorkoutViewModel @Inject constructor(
     val completedExercises = _completedExercises
 
     init {
-        viewModelScope.launch {
-            _completedWorkout.value = completedWorkoutId?.let {
-                completedWorkoutRepository.getById(
-                    it
-                )
-            }!!
-        }
-        viewModelScope.launch {
-            completedWorkoutId?.let {
-                completedExerciseRepository.getByCompletedWorkoutIdFlow(it).collect {
-                    _completedExercises.value = it
+        if (completedWorkoutId != null && completedWorkoutId!! > 0) {
+            viewModelScope.launch {
+                _completedWorkout.value = completedWorkoutRepository.getById(completedWorkoutId!!)
+            }
+            viewModelScope.launch {
+                completedWorkoutId?.let {
+                    completedExerciseRepository.getByCompletedWorkoutIdFlow(it).collect {
+                        _completedExercises.value = it
+                    }
                 }
             }
         }
@@ -70,26 +68,6 @@ class CompletedWorkoutViewModel @Inject constructor(
 
     suspend fun getExerciseTotalReps(exerciseId: Long): Int {
         return completedExerciseRepository.getTotalReps(exerciseId)
-    }
-
-    fun getWorkoutTotalExercises(): Int {
-        return _completedExercises.value.size
-    }
-
-    suspend fun getWorkoutTotalSets(): Int {
-        var totalSets = 0
-        for (completedExercise in _completedExercises.value) {
-            totalSets += completedExerciseRepository.getSetsNumber(completedExercise.id)
-        }
-        return totalSets
-    }
-
-    suspend fun getWorkoutTotalReps(): Int {
-        var totalReps = 0
-        for (completedExercise in _completedExercises.value) {
-            totalReps += completedExerciseRepository.getTotalReps(completedExercise.id)
-        }
-        return totalReps
     }
 
     fun getIconPathByCompleted(baseCompletedWorkout: BaseCompletedWorkout): String? {

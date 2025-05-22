@@ -64,10 +64,14 @@ class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
         }
     }
 
+    suspend fun delete(lastWorkout: LastWorkout) {
+        lastWorkoutDao.delete(lastWorkout)
+    }
+
     suspend fun insertLastWorkout(baseCompletedWorkout: BaseCompletedWorkout): Long {
         val lastWorkouts = getLastWorkouts().toMutableList()
         if (lastWorkouts.size == 3) {
-            lastWorkouts.removeAt(0)
+            delete(lastWorkouts.get(0))
         }
         val workout: LastWorkout
         when (baseCompletedWorkout) {

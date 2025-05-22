@@ -82,7 +82,10 @@ interface ExerciseDao {
     suspend fun getNotUsed(): List<Exercise>
 
     @Query("SELECT icon_path from exercises where id = :exerciseId")
-    suspend fun getExerciseIconPath(exerciseId: Long): String?
+    suspend fun getIconPath(exerciseId: Long): String?
+
+    @Query("SELECT video_path from exercises where id = :exerciseId")
+    suspend fun getVideoPath(exerciseId: Long): String?
 }
 
 class ExerciseRepository(private val dao: ExerciseDao) {
@@ -127,9 +130,9 @@ class ExerciseRepository(private val dao: ExerciseDao) {
         return dao.getAllExerciseNamesFlow()
     }
 
-    suspend fun getExerciseName(workoutId: Long): String {
+    suspend fun getExerciseName(exerciseId: Long): String {
         return withContext(Dispatchers.IO) {
-            dao.getExerciseName(workoutId)
+            dao.getExerciseName(exerciseId)
         }
     }
 
@@ -153,7 +156,13 @@ class ExerciseRepository(private val dao: ExerciseDao) {
 
     suspend fun getExerciseIconPath(exerciseId: Long): String? {
         return withContext(Dispatchers.IO) {
-            dao.getExerciseIconPath(exerciseId)
+            dao.getIconPath(exerciseId)
+        }
+    }
+
+    suspend fun getVideoPath(exerciseId: Long): String? {
+        return withContext(Dispatchers.IO) {
+            dao.getVideoPath(exerciseId)
         }
     }
 }

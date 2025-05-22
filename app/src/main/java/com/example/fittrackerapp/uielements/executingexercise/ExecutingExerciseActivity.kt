@@ -35,6 +35,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -58,11 +59,13 @@ import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import com.example.fittrackerapp.uielements.main.MainActivity
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 
+@AndroidEntryPoint
 class ExecutingExerciseActivity : ComponentActivity() {
     private val viewModel: ExecutingExerciseViewModel by viewModels()
 
@@ -148,7 +151,15 @@ fun MainScreen(
     formatTime: (Int) -> String,
     viewModel: ExecutingExerciseViewModel = viewModel()) {
 
-    val exercise = viewModel.exercise
+    val exerciseId = viewModel.exerciseId.collectAsState().value
+
+    val exerciseVideoPath = remember { mutableStateOf("")}
+
+    LaunchedEffect(Unit) {
+        exerciseVideoPath.value =
+            viewModel.getExerciseVideoPath(exerciseId).toString()// как получать упражнение?
+    }
+
 
     val stringExerciseTime = viewModel.stringExerciseTime.collectAsState().value
 
@@ -173,7 +184,7 @@ fun MainScreen(
         Text(exerciseName, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(14.dp))
         if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
-            val file = exercise.videoPath?.let { File(context.filesDir, it) }
+            val file = File(context.filesDir, exerciseVideoPath.value)
             if (file != null) {
                 VideoPlayerFromFile(file)
             }
@@ -462,21 +473,6 @@ fun SecondSetButtons(
         LargeButton(
             text = "Пауза",
             onClick = { setCondition(WorkoutCondition.PAUSE) },
-            modifier = Modifier.weight(1f)
-        )
-        LargeButton(
-            text = "Далее",
-            onClick = {
-                if ((workoutCondition == WorkoutCondition.SET
-                            || workoutCondition == WorkoutCondition.REST
-                            || workoutCondition == WorkoutCondition.PAUSE)
-                    && (lastCondition == WorkoutCondition.SET || lastCondition == WorkoutCondition.REST)
-                ) {
-                    setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
-                } else if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE) {
-                    setCondition(WorkoutCondition.SET)
-                }
-            },
             modifier = Modifier.weight(1f)
         )
     }

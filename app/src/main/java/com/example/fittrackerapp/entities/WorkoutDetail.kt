@@ -37,7 +37,6 @@ data class WorkoutDetail(
     @ColumnInfo val position: Int = 0,
     @ColumnInfo(name = "workout_id") val workoutId: Long = 0,
     @ColumnInfo(name = "exercise_id") val exerciseId: Long = 0,
-    @ColumnInfo(name = "exercise_name") var exerciseName: String = "",
     @ColumnInfo(name = "sets_number") val setsNumber: Int = 0,
     @ColumnInfo val reps: Int = 0,
     @ColumnInfo(name = "rest_duration") val restDuration: Int = 0,
