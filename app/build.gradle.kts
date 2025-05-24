@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)  version "2.1.0"
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -83,4 +84,6 @@ dependencies {
     testImplementation ("junit:junit:4.13.2")
     implementation("com.google.dagger:hilt-android:2.56")
     kapt("com.google.dagger:hilt-compiler:2.56")
+    implementation("com.google.firebase:firebase-auth:22.3.1")
+    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
 }
