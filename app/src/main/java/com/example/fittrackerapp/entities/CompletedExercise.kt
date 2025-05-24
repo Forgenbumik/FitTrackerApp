@@ -1,7 +1,5 @@
 package com.example.fittrackerapp.entities
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -36,8 +34,6 @@ import java.time.LocalDateTime
         )
     ]
 )
-
-@RequiresApi(Build.VERSION_CODES.O)
 data class CompletedExercise(
     @PrimaryKey(autoGenerate = true) override val id: Long = 0,
     @ColumnInfo(name = "exercise_id") val exerciseId: Long = 0,
