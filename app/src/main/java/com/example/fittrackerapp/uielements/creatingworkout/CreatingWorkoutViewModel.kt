@@ -72,7 +72,6 @@ class CreatingWorkoutViewModel(
 
     fun addExerciseToList(workoutDetail: WorkoutDetail) {
         viewModelScope.launch {
-            workoutDetail.exerciseName = exerciseRepository.getExerciseName(workoutDetail.exerciseId)
             _exercisesList.add(workoutDetail)
         }
     }
@@ -113,5 +112,9 @@ class CreatingWorkoutViewModel(
         if (index != -1) {
             _exercisesList[index] = updatedDetail
         }
+    }
+
+    suspend fun getExerciseName(exerciseId: Long): String? {
+        return exerciseRepository.getExerciseName(exerciseId)
     }
 }

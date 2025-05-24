@@ -81,9 +81,7 @@ class ExecutingExerciseActivity : ComponentActivity() {
                     MainScreen(
                         Modifier.padding(innerPadding),
                         exerciseName,
-                        onEndClick = { onEndClick() },
-                        setCondition = { condition -> setCondition(condition)},
-                        formatTime = { secs -> formatTime(secs)})
+                        onEndClick = { onEndClick() })
                 }
             }
         }
@@ -125,21 +123,6 @@ class ExecutingExerciseActivity : ComponentActivity() {
 
 
     }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun formatTime(secs: Int): String {
-        return viewModel.formatTime(secs)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun setCondition(condition: WorkoutCondition) {
-        viewModel.setCondition(condition)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun setChangingSet(set: Set) {
-        viewModel.setChangingSet(set)
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -147,8 +130,6 @@ class ExecutingExerciseActivity : ComponentActivity() {
 fun MainScreen(
     modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
     exerciseName: String, onEndClick: () -> Unit,
-    setCondition: (WorkoutCondition) -> Unit,
-    formatTime: (Int) -> String,
     viewModel: ExecutingExerciseViewModel = viewModel()) {
 
     val exerciseId = viewModel.exerciseId.collectAsState().value
@@ -189,12 +170,12 @@ fun MainScreen(
                 VideoPlayerFromFile(file)
             }
 
-            SetsTable(setList, formatTime, isShowChangeWindow)
+            SetsTable(setList, viewModel::formatTime, isShowChangeWindow)
         }
 
         Text(stringExerciseTime)
         LastSet(lastCondition, workoutCondition, stringSetTime,
-            stringRestTime, setCondition, onEndClick, isShowChangeWindow)
+            stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow)
     }
 
     if (isShowChangeWindow.value && changingSet.value != null) {

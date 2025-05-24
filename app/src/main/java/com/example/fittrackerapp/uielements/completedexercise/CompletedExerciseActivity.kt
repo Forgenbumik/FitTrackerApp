@@ -30,6 +30,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -51,6 +53,7 @@ import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.entities.Set
 import com.example.fittrackerapp.uielements.CenteredPicker
+import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -68,29 +71,17 @@ class CompletedExerciseActivity: ComponentActivity() {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(modifier = Modifier.padding(innerPadding),
-                        exerciseName,
-                        formatTime = {secs -> formatTime(secs)},
-                        setChangingSet = {set -> setChangingSet(set)})
+                        exerciseName)
                 }
             }
         }
         exerciseName = intent.getStringExtra("exerciseName").toString()
     }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun formatTime(secs: Int): String {
-        return viewModel.formatTime(secs)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun setChangingSet(set: Set) {
-        viewModel.setChangingSet(set)
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExerciseViewModel = viewModel(), formatTime: (Int) -> String, setChangingSet: (Set) -> Unit) {
+fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExerciseViewModel = viewModel()) {
 
     val completedExercise = viewModel.completedExercise.collectAsState().value
     val setList = viewModel.setList
@@ -104,8 +95,9 @@ fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExe
     ) {
         Text(exerciseName, fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold)
-        ExerciseInformation(completedExercise)
-        SetsTable(setList, formatTime, isShowChangeWindow)
+        ExerciseInformation(setList)
+        SetsTable(setList, viewModel::formatTime, isShowChangeWindow, viewModel::setChangingSet)
+        NotesField(completedExercise.notes)
     }
 
     if (isShowChangeWindow.value && changingSet.value != null) {
@@ -115,9 +107,7 @@ fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExe
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ExerciseInformation(exercise: CompletedExercise, viewModel: CompletedExerciseViewModel = viewModel()) {
-
-    val setList = viewModel.setList
+fun ExerciseInformation(setList: SnapshotStateList<Set>) {
 
     val exerciseSetsNumber = setList.size
 
@@ -132,10 +122,11 @@ fun ExerciseInformation(exercise: CompletedExercise, viewModel: CompletedExercis
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: CompletedExerciseViewModel = viewModel()) {
+fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>,
+              setChangingSet: (Set) -> Unit) {
     Column {
         SetsTableHeaders()
-        SetsStrings(setList, formatTime, isShowChangeWindow)
+        SetsStrings(setList, formatTime, isShowChangeWindow, setChangingSet)
     }
 }
 
@@ -158,7 +149,8 @@ fun SetsTableHeaders() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>, viewModel: CompletedExerciseViewModel = viewModel()) {
+fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>,
+                setChangingSet: (Set) -> Unit) {
 
     val setListValue = setList
 
@@ -184,8 +176,8 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                     .weight(1f), contentAlignment = Alignment.Center) {
 
                     IconButton(onClick = {
-                        viewModel.setChangingSet(setListValue[i])
-                        viewModel.setIsChangingSet(true)
+                        setChangingSet(setListValue[i])
+                        isShowChangeWindow.value = true
                     }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -197,7 +189,6 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
             HorizontalDivider() // Разделитель между строками
         }
     }
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -224,7 +215,8 @@ fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewMod
                         selectedRepsNumber = selectedItem
                     })
                     ListWeight(modifier, selectedWeight.toInt(), (selectedWeight - selectedWeight.toInt()).toInt(),
-                        onItemSelected = { selectedInteger, selectedDecimal -> selectedWeight = selectedInteger + selectedDecimal.toDouble() / 10 })
+                        onItemSelected = { selectedInteger, selectedDecimal ->
+                            selectedWeight = selectedInteger + selectedDecimal.toDouble() / 10 })
                 }
 
                 Button(
@@ -268,5 +260,41 @@ fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSel
             decimalWeight = selectedDecimal
             onItemSelected(integerWeight, decimalWeight)
         }, modifier = modifier)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun NotesField(notes: String?, viewModel: CompletedWorkoutViewModel = viewModel()) {
+    val colors = TextFieldDefaults.colors(
+        focusedContainerColor = Color(0xFF1E1E2E),
+        unfocusedContainerColor = Color(0xFF2A2A3A),
+        focusedLabelColor = Color(0xFF1B9AAA),
+        unfocusedLabelColor = Color.Gray,
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        cursorColor = Color(0xFF1B9AAA)
+    )
+    if (notes != null) {
+        TextField(
+            value = notes,
+            onValueChange = { viewModel.setWorkoutNotes(it) },
+            label = { Text("Название тренировки") },
+            colors = colors,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+    }
+    else {
+        TextField(
+            value = "",
+            onValueChange = { viewModel.setWorkoutNotes(it) },
+            label = { Text("Название тренировки") },
+            colors = colors,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
     }
 }

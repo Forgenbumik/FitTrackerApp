@@ -42,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +67,7 @@ import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.reflect.KSuspendFunction1
 
 class CreatingWorkoutActivity: ComponentActivity() {
     private val viewModel: CreatingWorkoutViewModel by viewModels()
@@ -234,29 +236,7 @@ fun ExercisesList(
     ) {
         LazyColumn {
             items(exercises) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            viewModel.setSelectedExercise(it)
-                            isShowChangeWindow.value = true
-                        }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.padding(start = 8.dp)) {
-                        Text(
-                            it.exerciseName,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            "${it.setsNumber} подходов, ${it.reps} повт.",
-                            color = Color.LightGray,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
+                ExerciseItem(isShowChangeWindow, it, viewModel::setSelectedExercise, viewModel::getExerciseName)
             }
         }
 
@@ -268,6 +248,40 @@ fun ExercisesList(
 
         TextButton(onClick = onAddExerciseClick, modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Text("+ Добавить упражнение", color = Color(0xFF1B9AAA))
+        }
+    }
+}
+
+@Composable
+fun ExerciseItem(isShowChangeWindow: MutableState<Boolean>, workoutDetail: WorkoutDetail, setSelectedExercise: (WorkoutDetail) -> Unit, getExerciseName: KSuspendFunction1<Long, String?>) {
+
+    val exerciseName = remember { mutableStateOf("") }
+
+    LaunchedEffect(workoutDetail) {
+        exerciseName.value = getExerciseName(workoutDetail.exerciseId).toString()
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                setSelectedExercise(workoutDetail)
+                isShowChangeWindow.value = true
+            }
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.padding(start = 8.dp)) {
+            Text(
+                exerciseName.value,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "${workoutDetail.setsNumber} подходов, ${workoutDetail.reps} повт.",
+                color = Color.LightGray,
+                fontSize = 12.sp
+            )
         }
     }
 }

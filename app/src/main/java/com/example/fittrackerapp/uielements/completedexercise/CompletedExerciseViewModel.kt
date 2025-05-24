@@ -30,9 +30,6 @@ class CompletedExerciseViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     val completedExercise: StateFlow<CompletedExercise> = _completedExercise
 
-    private val _isChangingSet = MutableStateFlow(false)
-    val isChangingSet: StateFlow<Boolean> = _isChangingSet
-
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
 
@@ -57,10 +54,6 @@ class CompletedExerciseViewModel @Inject constructor(
 
     suspend fun loadCompletedExercise(completedExerciseId: Long) {
         _completedExercise.value = completedExerciseRepository.getById(completedExerciseId)
-    }
-
-    fun setIsChangingSet(isChangingSet: Boolean) {
-        _isChangingSet.value = isChangingSet
     }
 
     fun setChangingSet(set: Set?) {

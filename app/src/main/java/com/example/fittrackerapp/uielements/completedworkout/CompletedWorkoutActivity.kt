@@ -60,8 +60,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.font.FontWeight
+import com.example.fittrackerapp.entities.CompletedWorkout
 import com.example.fittrackerapp.uielements.main.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
+import kotlin.reflect.KSuspendFunction1
 
 @AndroidEntryPoint
 class CompletedWorkoutActivity: ComponentActivity()  {
@@ -76,7 +78,7 @@ class CompletedWorkoutActivity: ComponentActivity()  {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(modifier = Modifier.padding(innerPadding),
                                onExerciseClick = { exercise, exerciseName -> onExerciseClick(exercise, exerciseName) },
-                               formatTime = ::formatTime, onBackClick = ::onBackPressed)
+                               onBackClick = ::onBackPressed)
                 }
             }
         }
@@ -88,11 +90,6 @@ class CompletedWorkoutActivity: ComponentActivity()  {
             putExtra("exerciseName", exerciseName)
         }
         startActivity(intent)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun formatTime(secs: Int): String {
-        return viewModel.formatTime(secs)
     }
 
     override fun onBackPressed() {
@@ -107,7 +104,6 @@ class CompletedWorkoutActivity: ComponentActivity()  {
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
-    formatTime: (Int) -> String,
     onExerciseClick: (CompletedExercise, String) -> Unit,
     viewModel: CompletedWorkoutViewModel = viewModel(),
     onBackClick: () -> Unit
@@ -133,7 +129,7 @@ fun MainScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            WorkoutInformation()
+            WorkoutInformation(completedWorkout, completedExercises, viewModel::formatTime, viewModel::getExerciseSetsNumber, viewModel::getExerciseTotalReps)
             Spacer(modifier = Modifier.height(16.dp))
 
             Box(
@@ -145,18 +141,19 @@ fun MainScreen(
             ) {
                 ExercisesList(completedExercises, onExerciseClick)
             }
-            completedWorkout.notes?.let { NameField(it) }
+            NotesField(completedWorkout.notes)
         }
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun WorkoutInformation(viewModel: CompletedWorkoutViewModel = viewModel()) {
-    val completedWorkout = viewModel.completedWorkout.collectAsState().value
-    val completedExercises = viewModel.completedExercises.collectAsState().value
+fun WorkoutInformation(
+    completedWorkout: CompletedWorkout, completedExercises: List<CompletedExercise>, formatTime: (Int) -> String,
+    getExerciseSetsNumber: KSuspendFunction1<Long, Int>, getExerciseTotalReps: KSuspendFunction1<Long, Int>
+) {
 
-    val formattedTime = viewModel.formatTime(completedWorkout.duration)
+    val formattedTime = formatTime(completedWorkout.duration)
     val totalExercises = completedExercises.size
 
     val totalSets = remember { mutableStateOf(0) }
@@ -164,11 +161,11 @@ fun WorkoutInformation(viewModel: CompletedWorkoutViewModel = viewModel()) {
 
     LaunchedEffect(completedExercises) {
         totalSets.value = completedExercises.sumOf {
-            viewModel.getExerciseSetsNumber(it.id)
+            getExerciseSetsNumber(it.id)
         }
 
         totalReps.value = completedExercises.sumOf {
-            viewModel.getExerciseTotalReps(it.id)
+            getExerciseTotalReps(it.id)
         }
     }
 
@@ -253,22 +250,36 @@ fun ExerciseItem(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun NameField(notes: String, viewModel: CompletedWorkoutViewModel = viewModel()) {
-    TextField(
-        value = notes,
-        onValueChange = { viewModel.setWorkoutNotes(it) },
-        label = { Text("Название тренировки") },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFF1E1E2E),
-            unfocusedContainerColor = Color(0xFF2A2A3A),
-            focusedLabelColor = Color(0xFF1B9AAA),
-            unfocusedLabelColor = Color.Gray,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            cursorColor = Color(0xFF1B9AAA)
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
+fun NotesField(notes: String?, viewModel: CompletedWorkoutViewModel = viewModel()) {
+    val colors = TextFieldDefaults.colors(
+        focusedContainerColor = Color(0xFF1E1E2E),
+        unfocusedContainerColor = Color(0xFF2A2A3A),
+        focusedLabelColor = Color(0xFF1B9AAA),
+        unfocusedLabelColor = Color.Gray,
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        cursorColor = Color(0xFF1B9AAA)
     )
+    if (notes != null) {
+        TextField(
+            value = notes,
+            onValueChange = { viewModel.setWorkoutNotes(it) },
+            label = { Text("Название тренировки") },
+            colors = colors,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+    }
+    else {
+        TextField(
+            value = "",
+            onValueChange = { viewModel.setWorkoutNotes(it) },
+            label = { Text("Название тренировки") },
+            colors = colors,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+    }
 }

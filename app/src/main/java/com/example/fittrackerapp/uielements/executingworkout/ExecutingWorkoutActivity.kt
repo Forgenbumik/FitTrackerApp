@@ -85,10 +85,7 @@ class ExecutingWorkoutActivity : ComponentActivity() {
                     MainScreen(
                         Modifier.padding(innerPadding),
                         workoutName,
-                        onEndClick = { onEndClick() },
-                        setCondition = {condition -> setCondition(condition)},
-                        formatTime = {secs -> formatTime(secs)},
-                        setChangingSet = {set -> setChangingSet(set)})
+                        onEndClick = { onEndClick() },)
                 }
             }
         }
@@ -125,30 +122,12 @@ class ExecutingWorkoutActivity : ComponentActivity() {
             finish()
         }
     }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun formatTime(secs: Int): String {
-        return viewModel.formatTime(secs)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun setCondition(condition: WorkoutCondition) {
-        viewModel.setCondition(condition)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun setChangingSet(set: Set) {
-        viewModel.setChangingSet(set)
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).background(Color(0xFF18181A)),
                workoutName: String, onEndClick: () -> Unit,
-               setCondition: (WorkoutCondition) -> Unit,
-               formatTime: (Int) -> String,
-               setChangingSet: (Set) -> Unit,
                viewModel: ExecutingWorkoutViewModel = viewModel()) {
 
     val currentExercise = viewModel.currentExercise.collectAsState().value
@@ -186,17 +165,17 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
                 VideoPlayerFromFile(file)
             }
 
-            SetsTable(setList, formatTime, isShowChangeWindow, setChangingSet)
+            SetsTable(setList, viewModel::formatTime, isShowChangeWindow, viewModel::setChangingSet)
         }
 
         Text(stringExerciseTime)
         if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     || lastCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     && workoutCondition == WorkoutCondition.PAUSE) {
-            ExerciseInformation(nextExercise, stringRestTime, formatTime)
+            ExerciseInformation(nextExercise, stringRestTime, viewModel::formatTime)
         }
         LastSet(lastCondition, workoutCondition, stringSetTime,
-            stringRestTime, setCondition, onEndClick, isShowChangeWindow)
+            stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow)
     }
 
     if (isShowChangeWindow.value && changingSet.value != null) {
