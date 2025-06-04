@@ -50,20 +50,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-fun ClickableRow(text: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 4.dp)
-            .clickable { onClick() }
-            .background(Color.LightGray)
-            .padding(vertical = 12.dp)
-    ) {
-        Text(text)
-    }
-}
-
-@Composable
 fun CenteredPicker(
     items: List<Int>,
     modifier: Modifier = Modifier,
@@ -72,7 +58,7 @@ fun CenteredPicker(
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val itemHeight = 50.dp
+    val itemHeight = 40.dp
     val visibleItemsCount = 5
     val centerIndex = visibleItemsCount/2
 

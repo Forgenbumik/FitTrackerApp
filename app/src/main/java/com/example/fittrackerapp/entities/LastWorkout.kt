@@ -9,8 +9,14 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.exercise.ExerciseDao
+import com.example.fittrackerapp.entities.workout.WorkoutDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Entity(tableName = "last_workouts",
     foreignKeys = [
@@ -31,7 +37,7 @@ import kotlinx.coroutines.withContext
     ])
 data class LastWorkout(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long = 0,
+    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: String = "",
     @ColumnInfo(name = "workout_name") val workoutName: String = "",
     @ColumnInfo(name = "type_id") val typeId: Int = 0,
     @ColumnInfo val duration: Int = 0
@@ -53,7 +59,8 @@ interface LastWorkoutDao {
     suspend fun getById(id: Int): LastWorkout
 }
 
-class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
+@Singleton
+class LastWorkoutRepository @Inject constructor(private val lastWorkoutDao: LastWorkoutDao,
                             private val workoutDao: WorkoutDao,
                             private val exerciseDao: ExerciseDao
 ) {
@@ -78,18 +85,19 @@ class LastWorkoutRepository(private val lastWorkoutDao: LastWorkoutDao,
             is CompletedWorkout -> {
                 val completedWorkout = baseCompletedWorkout
                 val baseWorkout = workoutDao.getById(completedWorkout.workoutId)
-                if (baseWorkout != null) {
-                    workout = LastWorkout(0, completedWorkout.id, baseWorkout.name, 1, completedWorkout.duration)
-                    return lastWorkoutDao.insert(workout)
-                }
+                workout = LastWorkout(0, completedWorkout.id, baseWorkout.name, 1, completedWorkout.duration)
+                return lastWorkoutDao.insert(workout)
             }
             is CompletedExercise -> {
-                val completedExercise = baseCompletedWorkout
-                val exercise = exerciseDao.getById(completedExercise.exerciseId)
-                if (exercise != null) {
-                    workout = LastWorkout(0, completedExercise.id, exercise.name, 2, completedExercise.duration)
-                    return lastWorkoutDao.insert(workout)
-                }
+                val exercise = exerciseDao.getById(baseCompletedWorkout.exerciseId)
+                workout = LastWorkout(
+                    0,
+                    baseCompletedWorkout.id,
+                    exercise.name,
+                    2,
+                    baseCompletedWorkout.duration
+                )
+                return lastWorkoutDao.insert(workout)
             }
         }
         return 0

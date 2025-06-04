@@ -56,8 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.WorkoutDetail
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
@@ -91,22 +91,6 @@ class ExecutingWorkoutActivity : ComponentActivity() {
         }
     }
 
-    @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onBackPressed() {
-
-        viewModel.setCondition(WorkoutCondition.END)
-
-        lifecycleScope.launch {
-            viewModel.isSaveCompleted
-                .filter { it } // пропускаем, пока не станет true
-                .first()       // ждём первое значение true
-            finish()
-            super.onBackPressed()
-        }
-
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun onEndClick() {
 
@@ -137,6 +121,8 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
     val stringSetTime = viewModel.stringSetTime.collectAsState()
 
     val stringRestTime = viewModel.stringRestTime.collectAsState()
+
+    val stringExerciseRestTime = viewModel.stringExerciseRestTime.collectAsState()
 
     val workoutCondition = viewModel.workoutCondition.collectAsState().value
 
@@ -172,7 +158,7 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
         if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     || lastCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     && workoutCondition == WorkoutCondition.PAUSE) {
-            ExerciseInformation(nextExercise, stringRestTime, viewModel::formatTime)
+            ExerciseInformation(nextExercise, stringExerciseRestTime, viewModel::formatTime)
         }
         LastSet(lastCondition, workoutCondition, stringSetTime,
             stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow)

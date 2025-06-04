@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.entities
+package com.example.fittrackerapp.entities.completedworkout
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -12,10 +12,13 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
+import com.example.fittrackerapp.entities.workout.Workout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Entity(
     tableName = "completed_workouts",
@@ -31,20 +34,21 @@ import java.time.LocalDateTime
 )
 @RequiresApi(Build.VERSION_CODES.O)
 data class CompletedWorkout(
-    @PrimaryKey(autoGenerate = true) override val id: Long = 0,
+    @PrimaryKey(autoGenerate = false) override val id: String = "",
     @ColumnInfo override val duration: Int = 0,
     @ColumnInfo override val notes: String? = null,
     @ColumnInfo(name = "begin_time") override val beginTime: LocalDateTime = LocalDateTime.now(),
-    @ColumnInfo(name = "workout_id") val workoutId: Long = 0
+    @ColumnInfo(name = "workout_id") val workoutId: String = "",
+    @ColumnInfo(name = "user_id") val userId: String = ""
 ): BaseCompletedWorkout()
 
 @Dao
 interface CompletedWorkoutDao {
     @Insert(entity = CompletedWorkout::class)
-    suspend fun insert(completedWorkout: CompletedWorkout): Long
+    suspend fun insert(completedWorkout: CompletedWorkout)
 
     @Query("SELECT * FROM completed_workouts WHERE id = :completedWorkoutId")
-    suspend fun getById(completedWorkoutId: Long): CompletedWorkout
+    suspend fun getById(completedWorkoutId: String): CompletedWorkout
 
     @Delete
     suspend fun delete(completedWorkout: CompletedWorkout)
@@ -59,18 +63,25 @@ interface CompletedWorkoutDao {
     fun getAllFlow(): Flow<List<CompletedWorkout>>
 
     @Query("SELECT name FROM workouts WHERE id = :workoutId")
-    suspend fun getWorkoutName(workoutId: Long): String
+    suspend fun getWorkoutName(workoutId: String): String
+
+    @Insert
+    suspend fun insertAll(completedWorkouts: List<CompletedWorkout>)
 }
 
-class CompletedWorkoutRepository(private val dao: CompletedWorkoutDao) {
+@Singleton
+class CompletedWorkoutRepository @Inject constructor(
+    private val dao: CompletedWorkoutDao,
+    private val firebaseSource: FirebaseCompletedWorkoutService) {
 
-    suspend fun insert(completedWorkout: CompletedWorkout): Long {
-        return withContext(Dispatchers.IO) {
+    suspend fun insert(completedWorkout: CompletedWorkout) {
+        withContext(Dispatchers.IO) {
+            firebaseSource.upload(completedWorkout)
             dao.insert(completedWorkout)
         }
     }
 
-    suspend fun getById(completedWorkoutId: Long): CompletedWorkout {
+    suspend fun getById(completedWorkoutId: String): CompletedWorkout {
         return withContext(Dispatchers.IO) {
             dao.getById(completedWorkoutId)
         }
@@ -78,12 +89,14 @@ class CompletedWorkoutRepository(private val dao: CompletedWorkoutDao) {
 
     suspend fun delete(completedWorkout: CompletedWorkout) {
         withContext(Dispatchers.IO) {
+            firebaseSource.delete(completedWorkout)
             dao.delete(completedWorkout)
         }
     }
 
     suspend fun update(completedWorkout: CompletedWorkout) {
         withContext(Dispatchers.IO) {
+            firebaseSource.upload(completedWorkout)
             dao.update(completedWorkout)
         }
     }
@@ -92,7 +105,7 @@ class CompletedWorkoutRepository(private val dao: CompletedWorkoutDao) {
         return dao.getAllFlow()
     }
 
-    suspend fun getWorkoutName(workoutId: Long): String {
+    suspend fun getWorkoutName(workoutId: String): String {
         return withContext(Dispatchers.IO) {
             dao.getWorkoutName(workoutId)
         }

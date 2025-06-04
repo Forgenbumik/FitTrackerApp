@@ -1,5 +1,7 @@
-package com.example.fittrackerapp.entities
+package com.example.fittrackerapp.entities.completedexercise
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -10,10 +12,15 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.workout.Workout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Entity(
     tableName = "completed_exercises",
@@ -29,29 +36,31 @@ import java.time.LocalDateTime
             entity = CompletedWorkout::class,
             parentColumns = ["id"],
             childColumns = ["completed_workout_id"],
-            onDelete = ForeignKey.CASCADE,
+            onDelete = ForeignKey.SET_NULL,
             onUpdate = ForeignKey.CASCADE
         )
     ]
 )
-data class CompletedExercise(
-    @PrimaryKey(autoGenerate = true) override val id: Long = 0,
-    @ColumnInfo(name = "exercise_id") val exerciseId: Long = 0,
+@RequiresApi(Build.VERSION_CODES.O)
+data class CompletedExercise (
+    @PrimaryKey(autoGenerate = false) override val id: String = "",
+    @ColumnInfo(name = "exercise_id") val exerciseId: String = "",
     @ColumnInfo override val duration: Int = 0,
     @ColumnInfo override val notes: String? = null,
     @ColumnInfo(name = "begin_time") override val beginTime: LocalDateTime = LocalDateTime.now(),
-    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: Long? = null,
-    @ColumnInfo(name = "rest_duration") val restDuration : Int = 0
+    @ColumnInfo(name = "completed_workout_id") val completedWorkoutId: String? = null,
+    @ColumnInfo(name = "rest_duration") val restDuration : Int = 0,
+    @ColumnInfo(name = "user_id") val userId: String = ""
 ): BaseCompletedWorkout()
 
 @Dao
 interface CompletedExerciseDao {
 
     @Insert(entity = CompletedExercise::class)
-    fun insert(completedExercise: CompletedExercise): Long
+    fun insert(completedExercise: CompletedExercise)
 
     @Query("SELECT * FROM completed_exercises WHERE id = :completedExerciseId")
-    suspend fun getById(completedExerciseId: Long): CompletedExercise
+    suspend fun getById(completedExerciseId: String): CompletedExercise
 
     @Delete
     suspend fun delete(completedExercise: CompletedExercise)
@@ -63,36 +72,47 @@ interface CompletedExerciseDao {
     suspend fun getAll(): List<CompletedExercise>
 
     @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = :completedWorkoutId")
-    fun getByCompletedWorkoutIdFlow(completedWorkoutId: Long): Flow<List<CompletedExercise>>
+    fun getByCompletedWorkoutIdFlow(completedWorkoutId: String): Flow<List<CompletedExercise>>
 
     @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = :completedWorkoutId")
-    suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise>
+    suspend fun getByCompletedWorkoutId(completedWorkoutId: String): List<CompletedExercise>
 
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
-    suspend fun getExerciseById(exerciseId: Long): Exercise
+    suspend fun getExerciseById(exerciseId: String): Exercise
 
     @Query("SELECT COUNT(*) from sets WHERE completed_exercise_id = :exerciseId")
-    suspend fun getSetsNumber(exerciseId: Long): Int
+    suspend fun getSetsNumber(exerciseId: String): Int
 
     @Query("SELECT SUM(reps) from sets WHERE completed_exercise_id = :exerciseId")
-    suspend fun getTotalReps(exerciseId: Long): Int
+    suspend fun getTotalReps(exerciseId: String): Int
 
     @Query("SELECT icon_path FROM exercises WHERE id = ( SELECT exercise_id FROM completed_exercises WHERE id = :completedExerciseId)")
-    suspend fun getExerciseIconPath(completedExerciseId: Long): String?
+    suspend fun getExerciseIconPath(completedExerciseId: String): String?
 
     @Query("SELECT * FROM completed_exercises WHERE completed_workout_id = null")
     suspend fun getSeparateCompleted(): List<CompletedExercise>
+
+    @Insert
+    suspend fun insertAll(completedExercises: List<CompletedExercise>)
+
+    @Query("SELECT * from completed_exercises WHERE completed_workout_id = null")
+    fun getSeparateCompletedFlow(): Flow<List<CompletedExercise>>
 }
 
-class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
+@Singleton
+class CompletedExerciseRepository @Inject constructor(
+    private val dao: CompletedExerciseDao,
+    private val firebaseSource: FirebaseCompletedExerciseService,
+    ) {
 
-    suspend fun insert(completedExercise: CompletedExercise): Long {
-        return withContext(Dispatchers.IO) {
+    suspend fun insert(completedExercise: CompletedExercise) {
+        withContext(Dispatchers.IO) {
+            firebaseSource.upload(completedExercise)
             dao.insert(completedExercise)
         }
     }
 
-    suspend fun getExerciseIconPath(completedExerciseId: Long): String? {
+    suspend fun getExerciseIconPath(completedExerciseId: String): String? {
         return withContext(Dispatchers.IO) {
             dao.getExerciseIconPath(completedExerciseId)
         }
@@ -100,17 +120,19 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
 
     suspend fun delete(completedExercise: CompletedExercise) {
         withContext(Dispatchers.IO) {
+            firebaseSource.delete(completedExercise)
             dao.delete(completedExercise)
         }
     }
 
     suspend fun update(completedExercise: CompletedExercise) {
         withContext(Dispatchers.IO) {
+            firebaseSource.upload(completedExercise)
             dao.update(completedExercise)
         }
     }
 
-    suspend fun getById(completedExerciseId: Long): CompletedExercise {
+    suspend fun getById(completedExerciseId: String): CompletedExercise {
         return withContext(Dispatchers.IO) {
             dao.getById(completedExerciseId)
         }
@@ -122,29 +144,29 @@ class CompletedExerciseRepository(private val dao: CompletedExerciseDao) {
         }
     }
 
-    fun getByCompletedWorkoutIdFlow(completedWorkoutId: Long): Flow<List<CompletedExercise>> {
+    fun getByCompletedWorkoutIdFlow(completedWorkoutId: String): Flow<List<CompletedExercise>> {
         return dao.getByCompletedWorkoutIdFlow(completedWorkoutId)
     }
 
-    suspend fun getByCompletedWorkoutId(completedWorkoutId: Long): List<CompletedExercise> {
+    suspend fun getByCompletedWorkoutId(completedWorkoutId: String): List<CompletedExercise> {
         return withContext(Dispatchers.IO) {
             dao.getByCompletedWorkoutId(completedWorkoutId)
         }
     }
 
-    suspend fun getSetsNumber(exerciseId: Long): Int {
+    suspend fun getSetsNumber(exerciseId: String): Int {
         return withContext(Dispatchers.IO) {
             dao.getSetsNumber(exerciseId)
         }
     }
 
-    suspend fun getTotalReps(exerciseId: Long): Int {
+    suspend fun getTotalReps(exerciseId: String): Int {
         return withContext(Dispatchers.IO) {
             dao.getTotalReps(exerciseId)
         }
     }
 
-    suspend fun getExerciseName(exerciseId: Long): String {
+    suspend fun getExerciseName(exerciseId: String): String {
         return withContext(Dispatchers.IO) {
             val exercise = dao.getExerciseById(exerciseId)
             exercise.name

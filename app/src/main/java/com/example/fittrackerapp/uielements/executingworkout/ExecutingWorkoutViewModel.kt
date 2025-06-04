@@ -7,18 +7,21 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.SetRepository
-import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.WorkoutDetail
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.exercise.ExerciseRepository
+import com.example.fittrackerapp.entities.set.SetRepository
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
 import com.example.fittrackerapp.service.ServiceCommand
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,7 +36,7 @@ class ExecutingWorkoutViewModel @Inject constructor(
 
     val isSaveCompleted: StateFlow<Boolean> = WorkoutRecordingCommunicator.isSaveCompleted
 
-    var completedWorkoutId = 0L
+    var completedWorkoutId = ""
     private val currentExecExerciseId = WorkoutRecordingCommunicator.currentExecExerciseId
 
     val nextExercise: StateFlow<WorkoutDetail?> = WorkoutRecordingCommunicator.nextExercise
@@ -50,6 +53,9 @@ class ExecutingWorkoutViewModel @Inject constructor(
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
 
+    private val _stringExerciseRestTime = MutableStateFlow("")
+    val stringExerciseRestTime: StateFlow<String> = _stringExerciseRestTime
+
     val changingSet: StateFlow<Set?> = WorkoutRecordingCommunicator.changingSet
     val workoutCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.workoutCondition
     val lastCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.lastCondition
@@ -58,22 +64,18 @@ class ExecutingWorkoutViewModel @Inject constructor(
     val currentExercise: StateFlow<Exercise?> = _currentExercise
 
     init {
-        if (currentExecExerciseId.value != null && currentExecExerciseId.value != 0L) {
-            viewModelScope.launch {
-                setsRepository.getByCompletedExerciseIdFlow(currentExecExerciseId.value!!)
-                    .collect { newSets ->
-                        _setList.clear()
-                        _setList.addAll(newSets)
-                    }
-            }
-            viewModelScope.launch {
-                currentExecExerciseId.flatMapLatest { id ->
-                    setsRepository.getByCompletedExerciseIdFlow(id!!)
-                }.collect { newSets ->
+
+        viewModelScope.launch {
+            currentExecExerciseId
+                .filterNotNull()
+                .filter { it != "" }
+                .flatMapLatest { id ->
+                    setsRepository.getByCompletedExerciseIdFlow(id)
+                }
+                .collect { newSets ->
                     _setList.clear()
                     _setList.addAll(newSets)
                 }
-            }
         }
 
         viewModelScope.launch {
@@ -96,6 +98,11 @@ class ExecutingWorkoutViewModel @Inject constructor(
                 updateRestTime(it)
             }
         }
+        viewModelScope.launch {
+            WorkoutRecordingCommunicator.exerciseRestSeconds.collectLatest {
+                updateExerciseRestTime(it)
+            }
+        }
     }
 
     fun sendCommand(command: ServiceCommand) {
@@ -115,6 +122,10 @@ class ExecutingWorkoutViewModel @Inject constructor(
 
     fun updateRestTime(secs: Int) {
         _stringRestTime.value = formatTime(secs)
+    }
+
+    fun updateExerciseRestTime(secs: Int) {
+        _stringExerciseRestTime.value = formatTime(secs)
     }
 
     fun setCondition(condition: WorkoutCondition) {
@@ -139,7 +150,12 @@ class ExecutingWorkoutViewModel @Inject constructor(
         val seconds = secs % 60
         val minutes = secs / 60 % 60
         val hours = secs / 3600
-        return "%02d:%02d:%02d".format(hours, minutes, seconds)
+
+        return if (hours > 0) {
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
     }
 
     fun updateSet(set: Set, reps: Int, weight: Double) {
@@ -148,7 +164,7 @@ class ExecutingWorkoutViewModel @Inject constructor(
         }
     }
 
-    suspend fun getExerciseName(exerciseId: Long): String {
+    suspend fun getExerciseName(exerciseId: String): String {
         return exerciseRepository.getExerciseName(exerciseId)
     }
 }

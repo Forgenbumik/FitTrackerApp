@@ -4,15 +4,14 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
-import com.example.fittrackerapp.entities.LastWorkout
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,7 +25,7 @@ class CompletedWorkoutViewModel @Inject constructor(
     private val completedExerciseRepository: CompletedExerciseRepository
 ): ViewModel() {
 
-    val completedWorkoutId: Long? get() = savedStateHandle["completedWorkoutId"]
+    private val completedWorkoutId: String? get() = savedStateHandle["completedWorkoutId"]
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val _completedWorkout = MutableStateFlow(CompletedWorkout())
@@ -37,7 +36,7 @@ class CompletedWorkoutViewModel @Inject constructor(
     val completedExercises = _completedExercises
 
     init {
-        if (completedWorkoutId != null && completedWorkoutId!! > 0) {
+        if (completedWorkoutId != null && completedWorkoutId!! != "") {
             viewModelScope.launch {
                 _completedWorkout.value = completedWorkoutRepository.getById(completedWorkoutId!!)
             }
@@ -51,7 +50,7 @@ class CompletedWorkoutViewModel @Inject constructor(
         }
     }
 
-    suspend fun getExerciseName(exerciseId: Long): String {
+    suspend fun getExerciseName(exerciseId: String): String {
         return completedExerciseRepository.getExerciseName(exerciseId)
     }
 
@@ -59,15 +58,27 @@ class CompletedWorkoutViewModel @Inject constructor(
         val seconds = secs % 60
         val minutes = secs / 60 % 60
         val hours = secs / 3600
-        return "%02d:%02d:%02d".format(hours, minutes, seconds)
+
+        return if (hours > 0) {
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
     }
 
-    suspend fun getExerciseSetsNumber(exerciseId: Long): Int {
+    suspend fun getExerciseSetsNumber(exerciseId: String): Int {
         return completedExerciseRepository.getSetsNumber(exerciseId)
     }
 
-    suspend fun getExerciseTotalReps(exerciseId: Long): Int {
-        return completedExerciseRepository.getTotalReps(exerciseId)
+    suspend fun getExerciseTotalReps(exerciseId: String): Int {
+        val totalReps = viewModelScope.async {
+            // длительная операция
+            completedExerciseRepository.getTotalReps(exerciseId)
+        }
+        if (totalReps.await() == null) {
+            return 0
+        }
+        return totalReps.await()
     }
 
     fun getIconPathByCompleted(baseCompletedWorkout: BaseCompletedWorkout): String? {
@@ -87,5 +98,18 @@ class CompletedWorkoutViewModel @Inject constructor(
 
     fun setWorkoutNotes(notes: String) {
         _completedWorkout.value = _completedWorkout.value.copy(notes = notes)
+    }
+
+    fun deleteCompeletedExercise(completedExercise: CompletedExercise) {
+        viewModelScope.launch {
+            completedExerciseRepository.delete(completedExercise)
+        }
+    }
+
+    fun saveWorkoutNotes(notes: String?) {
+        _completedWorkout.value = _completedWorkout.value.copy(notes = notes)
+        viewModelScope.launch {
+            completedWorkoutRepository.update(_completedWorkout.value)
+        }
     }
 }

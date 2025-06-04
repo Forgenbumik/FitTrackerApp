@@ -1,5 +1,6 @@
 package com.example.fittrackerapp.uielements.completedexercise
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,15 +13,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,27 +43,33 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.entities.CompletedExercise
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
-import com.example.fittrackerapp.entities.Set
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.ui.theme.Blue
+import com.example.fittrackerapp.ui.theme.FirstTeal
 import com.example.fittrackerapp.uielements.CenteredPicker
+import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutViewModel
+import com.example.fittrackerapp.uielements.completedworkout.ExercisesList
+import com.example.fittrackerapp.uielements.completedworkout.WorkoutInformation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -71,17 +87,27 @@ class CompletedExerciseActivity: ComponentActivity() {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(modifier = Modifier.padding(innerPadding),
-                        exerciseName)
+                        exerciseName, ::onBackPressed)
                 }
             }
         }
         exerciseName = intent.getStringExtra("exerciseName").toString()
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onBackPressed() {
+        val intent = Intent(this, CompletedWorkoutActivity::class.java).apply {
+            putExtra("completedWorkoutId", viewModel.completedExercise.value.completedWorkoutId)
+        }
+        startActivity(intent)
+        finish()
+        super.onBackPressed()
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExerciseViewModel = viewModel()) {
+fun MainScreen(modifier: Modifier, exerciseName: String, onBackClick: () -> Unit, viewModel: CompletedExerciseViewModel = viewModel()) {
 
     val completedExercise = viewModel.completedExercise.collectAsState().value
     val setList = viewModel.setList
@@ -90,15 +116,59 @@ fun MainScreen(modifier: Modifier, exerciseName: String, viewModel: CompletedExe
 
     val isShowChangeWindow = remember { mutableStateOf(false) }
 
-    Column(
-        modifier.windowInsetsPadding(WindowInsets.statusBars)
+    val notes = remember { mutableStateOf(completedExercise.notes) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
+            .windowInsetsPadding(WindowInsets.statusBars)
     ) {
-        Text(exerciseName, fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold)
-        ExerciseInformation(setList)
-        SetsTable(setList, viewModel::formatTime, isShowChangeWindow, viewModel::setChangingSet)
-        NotesField(completedExercise.notes)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            IconButton(onClick = { onBackClick() }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Назад",
+                    tint = Color(0xFF1B9AAA)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            ExerciseInformation(setList)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Прокручиваемая часть
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF015965))
+            ) {
+                SetsTable(setList, viewModel::formatTime, isShowChangeWindow, viewModel::setChangingSet, viewModel::deleteSet)
+            }
+
+            // Нижняя закреплённая панель с заметками
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.LightGray)
+                    .padding(16.dp)
+            ) {
+                NotesField(notes)
+            }
+        }
+
     }
+
 
     if (isShowChangeWindow.value && changingSet.value != null) {
         SetChangeWindow(changingSet.value!!, isShowChangeWindow)
@@ -123,10 +193,10 @@ fun ExerciseInformation(setList: SnapshotStateList<Set>) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>,
-              setChangingSet: (Set) -> Unit) {
+              setChangingSet: (Set) -> Unit, deleteSet: (Set) -> Unit) {
     Column {
         SetsTableHeaders()
-        SetsStrings(setList, formatTime, isShowChangeWindow, setChangingSet)
+        SetsStrings(setList, formatTime, isShowChangeWindow, setChangingSet, deleteSet)
     }
 }
 
@@ -150,7 +220,7 @@ fun SetsTableHeaders() {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, isShowChangeWindow: MutableState<Boolean>,
-                setChangingSet: (Set) -> Unit) {
+                setChangingSet: (Set) -> Unit, deleteSet: (Set) -> Unit) {
 
     val setListValue = setList
 
@@ -182,6 +252,14 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Редактировать"
+                        )
+                    }
+                    IconButton(
+                        onClick = { deleteSet(setList[i]) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Удалить"
                         )
                     }
                 }
@@ -265,36 +343,35 @@ fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun NotesField(notes: String?, viewModel: CompletedWorkoutViewModel = viewModel()) {
+fun NotesField(notes: MutableState<String?>, viewModel: CompletedExerciseViewModel = viewModel()) {
+
     val colors = TextFieldDefaults.colors(
-        focusedContainerColor = Color(0xFF1E1E2E),
-        unfocusedContainerColor = Color(0xFF2A2A3A),
-        focusedLabelColor = Color(0xFF1B9AAA),
-        unfocusedLabelColor = Color.Gray,
         focusedTextColor = Color.White,
         unfocusedTextColor = Color.White,
-        cursorColor = Color(0xFF1B9AAA)
+        focusedContainerColor = Blue,
+        unfocusedContainerColor = Blue,
+        cursorColor = FirstTeal,
+        focusedIndicatorColor = FirstTeal,
+        unfocusedIndicatorColor = Color.DarkGray,
+        focusedPlaceholderColor = Color.LightGray,
+        unfocusedPlaceholderColor = Color.Gray
     )
-    if (notes != null) {
-        TextField(
-            value = notes,
-            onValueChange = { viewModel.setWorkoutNotes(it) },
-            label = { Text("Название тренировки") },
-            colors = colors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+
+    TextField(
+        value = notes.value.orEmpty(),
+        onValueChange = { notes.value = it },
+        placeholder = { Text("Название тренировки") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = false,
+        colors = colors,
+        shape = RoundedCornerShape(12.dp),
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Done // <- показывает галочку
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                viewModel.saveWorkoutNotes(notes.value) // <- вызывается при нажатии галочки
+            }
         )
-    }
-    else {
-        TextField(
-            value = "",
-            onValueChange = { viewModel.setWorkoutNotes(it) },
-            label = { Text("Название тренировки") },
-            colors = colors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        )
-    }
+    )
 }

@@ -6,10 +6,9 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +43,7 @@ class AddingToUsedWorkoutsViewModel @Inject constructor(
     fun createNewExercise(): Boolean {
         if (_exerciseNames.none { it.equals(_addingExercise.value?.name, ignoreCase = true) }) {
             viewModelScope.launch {
-                if (addingExercise.value?.id == 0L) {
+                if (addingExercise.value?.id == "") {
                     _addingExercise.value?.let { exerciseRepository.insert(it) }
                 }
                 else {
@@ -63,7 +62,7 @@ class AddingToUsedWorkoutsViewModel @Inject constructor(
         }
     }
 
-    fun addSelectedExercise(exerciseId: Long) {
+    fun addSelectedExercise(exerciseId: String) {
         viewModelScope.launch {
             exerciseRepository.updateExerciseUsingById(exerciseId, true)
         }
@@ -182,20 +181,6 @@ class AddingToUsedWorkoutsViewModel @Inject constructor(
             } else {
                 Toast.makeText(context, "Произошла ошибка", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
-}
-
-class AddingToUsedWorkoutsModelFactory(
-    private val exerciseRepository: ExerciseRepository,
-) : ViewModelProvider.Factory {
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(AddingToUsedWorkoutsViewModel::class.java) -> {
-                AddingToUsedWorkoutsViewModel(exerciseRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.executingexercise.ExecutingExerciseActivity
+import com.example.fittrackerapp.uielements.executingexercise.ExerciseRecordingService
+import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingService
 import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -68,11 +71,18 @@ class ExerciseActivity: ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
 
     fun onStartExerciseClick() {
-        if (viewModel.exerciseId == 0L
+        if (viewModel.exerciseId == ""
             || viewModel.plannedSets.value == 0
             || viewModel.plannedReps.value == 0) {
             return
         }
+        val serviceIntent = Intent(this, ExerciseRecordingService::class.java).apply {
+            putExtra("exerciseId", viewModel.exerciseId)
+            putExtra("plannedSets", viewModel.plannedSets.value)
+            putExtra("plannedReps", viewModel.plannedReps.value)
+            putExtra("plannedRestDuration", viewModel.plannedRestDuration.value)
+        }
+        this.startForegroundService(serviceIntent)
         val intent = Intent(this, ExecutingExerciseActivity::class.java).apply {
             putExtra("exerciseId", viewModel.exerciseId)
             putExtra("plannedSets", viewModel.plannedSets.value)
@@ -91,7 +101,8 @@ class ExerciseActivity: ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainScreen(modifier: Modifier = Modifier, onStartExerciseClick: () -> Unit, onBackClick: () -> Unit) {
+fun MainScreen(modifier: Modifier = Modifier, onStartExerciseClick: () -> Unit, onBackClick: () -> Unit, viewModel: ExerciseViewModel = viewModel()) {
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -99,7 +110,7 @@ fun MainScreen(modifier: Modifier = Modifier, onStartExerciseClick: () -> Unit, 
     ) {
         DetailChangeWindow(onBackClick = onBackClick)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(7.dp))
 
         Button(
             onClick = onStartExerciseClick,
@@ -108,7 +119,7 @@ fun MainScreen(modifier: Modifier = Modifier, onStartExerciseClick: () -> Unit, 
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.DarkGray,
+                containerColor = Color(0xFF015965),
                 contentColor = Color.White
             ),
         ) {
@@ -132,13 +143,12 @@ fun DetailChangeWindow(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp))
-            .padding(16.dp)
     ) {
+        Spacer(Modifier.height(8.dp))
         // Верхняя панель: кнопка Назад и название упражнения
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { onBackClick() }) {
@@ -148,8 +158,8 @@ fun DetailChangeWindow(
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            viewModel.exercise.value?.let {
+            Spacer(modifier = Modifier.weight(0.5f))
+            viewModel.exercise.collectAsState().value?.let {
                 Text(
                     text = it.name,
                     style = MaterialTheme.typography.titleLarge,
@@ -160,7 +170,7 @@ fun DetailChangeWindow(
             }
             Spacer(modifier = Modifier.weight(1f)) // для симметрии
         }
-
+        Spacer(Modifier.height(8.dp))
         // Заголовки для подходов и повторений
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -178,7 +188,7 @@ fun DetailChangeWindow(
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Списки подходов и повторений
         Row(
@@ -229,6 +239,8 @@ fun DetailChangeWindow(
             )
         }
 
+        Spacer(Modifier.height(6.dp))
+
         // Таймер выбора времени отдыха
         TimePicker(
             selectedRestDuration = selectedRestDuration.value,
@@ -237,7 +249,7 @@ fun DetailChangeWindow(
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Кнопка сохранения
         Button(
@@ -247,7 +259,7 @@ fun DetailChangeWindow(
                 viewModel.setPlannedRestDuration(selectedRestDuration.value)
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.DarkGray,
+                containerColor = Color(0xFF015965),
                 contentColor = Color.White
             ),
             modifier = Modifier.fillMaxWidth()

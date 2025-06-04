@@ -1,7 +1,6 @@
 package com.example.fittrackerapp.uielements.executingexercise
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -9,23 +8,16 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
-import com.example.fittrackerapp.entities.LastWorkoutRepository
-import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.SetRepository
+import com.example.fittrackerapp.entities.exercise.ExerciseRepository
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.entities.set.SetRepository
 import com.example.fittrackerapp.service.ServiceCommand
 import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingCommunicator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -36,9 +28,9 @@ class ExecutingExerciseViewModel @Inject constructor(
     private val setRepository: SetRepository
 ): ViewModel() {
 
-    var completedExerciseId = 0L
+    var completedExerciseId = ""
 
-    val exerciseId: StateFlow<Long> = ExerciseRecordingCommunicator.exerciseId
+    val exerciseId: StateFlow<String> = ExerciseRecordingCommunicator.exerciseId
 
     val isSaveCompleted: StateFlow<Boolean> = WorkoutRecordingCommunicator.isSaveCompleted
 
@@ -59,7 +51,7 @@ class ExecutingExerciseViewModel @Inject constructor(
     val lastCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.lastCondition
 
     init {
-        if (completedExerciseId > 0) {
+        if (completedExerciseId != "") {
             viewModelScope.launch {
                 setRepository.getByCompletedExerciseIdFlow(completedExerciseId)
                     .collect { newSets ->
@@ -75,17 +67,17 @@ class ExecutingExerciseViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            WorkoutRecordingCommunicator.exerciseSeconds.collectLatest {
+            ExerciseRecordingCommunicator.exerciseSeconds.collectLatest {
                 updateExerciseTime(it)
             }
         }
         viewModelScope.launch {
-            WorkoutRecordingCommunicator.setSeconds.collectLatest {
+            ExerciseRecordingCommunicator.setSeconds.collectLatest {
                 updateSetTime(it)
             }
         }
         viewModelScope.launch {
-            WorkoutRecordingCommunicator.restSeconds.collectLatest {
+            ExerciseRecordingCommunicator.restSeconds.collectLatest {
                 updateRestTime(it)
             }
         }
@@ -131,10 +123,15 @@ class ExecutingExerciseViewModel @Inject constructor(
         val seconds = secs % 60
         val minutes = secs / 60 % 60
         val hours = secs / 3600
-        return "%02d:%02d:%02d".format(hours, minutes, seconds)
+
+        return if (hours > 0) {
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
     }
 
-    suspend fun getExerciseVideoPath(exerciseId: Long): String? {
+    suspend fun getExerciseVideoPath(exerciseId: String): String? {
         return exerciseRepository.getVideoPath(exerciseId)
     }
 

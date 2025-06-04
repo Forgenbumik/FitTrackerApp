@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

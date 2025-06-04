@@ -1,17 +1,18 @@
 package com.example.fittrackerapp.uielements.main
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
+import com.example.fittrackerapp.ActiveWorkoutPrefs
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
-import com.example.fittrackerapp.entities.Exercise
+import com.example.fittrackerapp.dataStore
+import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
 import com.example.fittrackerapp.entities.LastWorkout
 import com.example.fittrackerapp.entities.LastWorkoutRepository
+import com.example.fittrackerapp.uielements.executingexercise.ExerciseRecordingCommunicator
+import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingCommunicator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,15 @@ class MainScreenViewModel @Inject constructor(
     private val lastWorkoutRepository: LastWorkoutRepository,
     private val completedExerciseRepository: CompletedExerciseRepository
 ): ViewModel() {
+
+    private val _activeWorkoutId = MutableStateFlow<String?>(null)
+    val activeWorkoutId: StateFlow<String?> = _activeWorkoutId
+
+    private val _workoutSeconds = WorkoutRecordingCommunicator.workoutSeconds
+    val workoutSeconds: StateFlow<Int> = _workoutSeconds
+
+    private val _exerciseSeconds = ExerciseRecordingCommunicator.exerciseSeconds
+    val exerciseSeconds: StateFlow<Int> = _exerciseSeconds
 
     private val _favouriteWorkouts = MutableStateFlow<List<BaseWorkout>>(emptyList())
     val favouriteWorkouts: StateFlow<List<BaseWorkout>> = _favouriteWorkouts
@@ -51,10 +61,15 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun formatTime(secs: Int): String {
-        val hours = secs / 3600
-        val minutes = secs / 60
         val seconds = secs % 60
-        return "%02d:%02d:%02d".format(hours, minutes, seconds)
+        val minutes = secs / 60 % 60
+        val hours = secs / 3600
+
+        return if (hours > 0) {
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
     }
 
     fun getIconPathByCompleted(lastWorkout: LastWorkout): String? {
@@ -70,18 +85,12 @@ class MainScreenViewModel @Inject constructor(
             }
         }
     }
-}
 
-class MainScreenModelFactory(
-    private val workoutsAndExercisesRepository: WorkoutsAndExercisesRepository,
-    private val lastWorkoutRepository: LastWorkoutRepository,
-    private val completedExerciseRepository: CompletedExerciseRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainScreenViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MainScreenViewModel(workoutsAndExercisesRepository, lastWorkoutRepository, completedExerciseRepository) as T
+    fun loadActiveWorkout(context: Context) {
+        viewModelScope.launch {
+            context.dataStore.data.collect { prefs ->
+                _activeWorkoutId.value = prefs[ActiveWorkoutPrefs.ACTIVE_WORKOUT_ID]
+            }
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

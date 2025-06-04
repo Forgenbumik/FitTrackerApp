@@ -1,6 +1,6 @@
 package com.example.fittrackerapp.service
 
-import com.example.fittrackerapp.entities.Set
+import com.example.fittrackerapp.entities.set.Set
 
 sealed class ServiceCommand {
     object SetCommand: ServiceCommand()

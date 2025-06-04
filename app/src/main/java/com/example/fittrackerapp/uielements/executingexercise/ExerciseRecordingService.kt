@@ -10,13 +10,13 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import com.example.fittrackerapp.entities.LastWorkoutRepository
-import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.SetRepository
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.entities.set.SetRepository
 import com.example.fittrackerapp.service.ServiceCommand
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -48,7 +49,7 @@ class ExerciseRecordingService: Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
 
     private val _exerciseId = ExerciseRecordingCommunicator.exerciseId
-    private var completedExerciseId = 0L
+    private var completedExerciseId = ""
     private var plannedSets = 0
     private var plannedReps = 0
     private var plannedRestDuration = 0
@@ -77,31 +78,28 @@ class ExerciseRecordingService: Service() {
     @RequiresApi(Build.VERSION_CODES.O)
     private var completedExercise = CompletedExercise()
 
-    override fun onCreate() {
-        super.onCreate()
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundService()
 
-        _exerciseId.value = intent?.getLongExtra("workoutId", -1) ?: -1
+        _exerciseId.value = intent?.getStringExtra("exerciseId") ?: ""
         plannedSets = intent?.getIntExtra("plannedSets", -1) ?: -1
         plannedReps = intent?.getIntExtra("plannedReps", -1) ?: -1
         plannedRestDuration = intent?.getIntExtra("plannedRestDuration", -1) ?: -1
         if (!isTimerStarted) {
-            completedExercise = CompletedExercise(exerciseId =  _exerciseId.value)
             observeServiceCommands()
             serviceScope.launch {
-                launch {
-                    exerciseRepository.getByIdFlow(_exerciseId.value).collect {
-                        if (it != null) {
-                            exercise = it
-                        }
+                exerciseRepository.getByIdFlow(_exerciseId.value).collect {
+                    if (it != null) {
+                        exercise = it
                     }
                 }
-                launch { runExercise() }
-                launch { runExerciseTimer() }
+            }
+            serviceScope.launch {
+                runExercise()
+            }
+            serviceScope.launch {
+                runExerciseTimer()
             }
         }
         isTimerStarted = true
@@ -154,19 +152,22 @@ class ExerciseRecordingService: Service() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runExercise() {
-        completedExercise = CompletedExercise(exerciseId = _exerciseId.value)
-        completedExerciseId = completedExerciseRepository.insert(completedExercise)
-        completedExercise = completedExercise.copy(id = completedExerciseId)
+
+        completedExerciseId = UUID.randomUUID().toString()
+
+        completedExercise = CompletedExercise(id = completedExerciseId, exerciseId = _exerciseId.value)
+        completedExerciseRepository.insert(completedExercise)
 
         for (i in 1..plannedSets) {
             if (_workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                currentSet = Set(completedExerciseId = _completedExerciseId.value, duration =  _setSeconds.value, reps = plannedReps, setNumber =  i)
-                val setId = setsRepository.insert(currentSet)
-                currentSet = currentSet.copy(id = setId)
+                val setId = UUID.randomUUID().toString()
+                currentSet = Set(id = setId, completedExerciseId = _completedExerciseId.value, duration =  _setSeconds.value, reps = plannedReps, setNumber =  i)
+
+                setsRepository.insert(currentSet)
                 setList.add(currentSet)
-                runRestTimer(setId, plannedRestDuration)
+                runRestTimer(plannedRestDuration)
                 currentSet = currentSet.copy(restDuration = _restSeconds.value)
                 _restSeconds.value = 0
             }
@@ -245,7 +246,7 @@ class ExerciseRecordingService: Service() {
         }
     }
 
-    private suspend fun runRestTimer(setId: Long, restDuration: Int) {
+    private suspend fun runRestTimer(restDuration: Int) {
         while (true) {
             when (_workoutCondition.value) {
                 WorkoutCondition.REST -> restStopwatch(restDuration)
@@ -253,8 +254,9 @@ class ExerciseRecordingService: Service() {
                 else -> break
             }
         }
-        if (setId != 0L) {
-            setsRepository.updateRestDuration(setId, _restSeconds.value)
+        if (currentSet.id != "") {
+            currentSet = currentSet.copy(restDuration = _restSeconds.value)
+            setsRepository.update(currentSet)
         }
         _setSeconds.value = 0
     }
@@ -282,7 +284,12 @@ class ExerciseRecordingService: Service() {
         val seconds = secs % 60
         val minutes = secs / 60 % 60
         val hours = secs / 3600
-        return "%02d:%02d:%02d".format(hours, minutes, seconds)
+
+        return if (hours > 0) {
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
     }
 
     fun setChangingSet(set: Set?) {

@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,20 +60,23 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.entities.WorkoutDetail
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
 import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.reflect.KSuspendFunction1
 
+@AndroidEntryPoint
 class CreatingWorkoutActivity: ComponentActivity() {
     private val viewModel: CreatingWorkoutViewModel by viewModels()
 
-    var workoutId: Long = 0
+    var workoutId: String = ""
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,7 +96,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            val exerciseId = result.data?.getLongExtra("exerciseId", -1)
+            val exerciseId = result.data?.getStringExtra("exerciseId")
             viewModel.addExerciseToList(WorkoutDetail(workoutId= workoutId, exerciseId = exerciseId!!))
         }
     }
@@ -135,7 +139,7 @@ fun MainScreen(
     onBackClick: () -> Unit,
     viewModel: CreatingWorkoutViewModel = viewModel()
 ) {
-    val exercises = viewModel.exercisesList
+    val exercises = viewModel.workoutDetailsList
     val workout = viewModel.workout.collectAsState()
     val isShowChangeWindow = remember { mutableStateOf(false) }
 
@@ -236,7 +240,7 @@ fun ExercisesList(
     ) {
         LazyColumn {
             items(exercises) {
-                ExerciseItem(isShowChangeWindow, it, viewModel::setSelectedExercise, viewModel::getExerciseName)
+                ExerciseItem(isShowChangeWindow, it, viewModel::setSelectedExercise, viewModel::getExerciseName, viewModel::deleteWorkoutDetail)
             }
         }
 
@@ -253,7 +257,7 @@ fun ExercisesList(
 }
 
 @Composable
-fun ExerciseItem(isShowChangeWindow: MutableState<Boolean>, workoutDetail: WorkoutDetail, setSelectedExercise: (WorkoutDetail) -> Unit, getExerciseName: KSuspendFunction1<Long, String?>) {
+fun ExerciseItem(isShowChangeWindow: MutableState<Boolean>, workoutDetail: WorkoutDetail, setSelectedExercise: (WorkoutDetail) -> Unit, getExerciseName: KSuspendFunction1<String, String?>,  deleteWorkoutDetail: (WorkoutDetail) -> Unit) {
 
     val exerciseName = remember { mutableStateOf("") }
 
@@ -282,6 +286,14 @@ fun ExerciseItem(isShowChangeWindow: MutableState<Boolean>, workoutDetail: Worko
                 color = Color.LightGray,
                 fontSize = 12.sp
             )
+            IconButton(
+                onClick = { deleteWorkoutDetail(workoutDetail) }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Удалить"
+                )
+            }
         }
     }
 }

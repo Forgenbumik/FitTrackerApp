@@ -1,16 +1,13 @@
 package com.example.fittrackerapp.uielements.completedworkouts
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.abstractclasses.BaseCompletedWorkout
 import com.example.fittrackerapp.abstractclasses.repositories.CompletedWorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +26,9 @@ class CompletedWorkoutsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _completedWorkouts.value = completedWorkoutsAndExercisesRepository.getAll()
+            completedWorkoutsAndExercisesRepository.getAllFlow().collect {
+                _completedWorkouts.value = it
+            }
         }
     }
 
@@ -43,5 +42,20 @@ class CompletedWorkoutsViewModel @Inject constructor(
             workoutName = completedExerciseRepository.getExerciseName(baseCompletedWorkout.exerciseId)
         }
         return workoutName
+    }
+
+    fun deleteCompletedWorkout(completedWorkout: BaseCompletedWorkout) {
+        when (completedWorkout) {
+            is CompletedWorkout -> {
+                viewModelScope.launch {
+                    completedWorkoutRepository.delete(completedWorkout)
+                }
+            }
+            is CompletedExercise -> {
+                viewModelScope.launch {
+                    completedExerciseRepository.delete(completedWorkout)
+                }
+            }
+        }
     }
 }

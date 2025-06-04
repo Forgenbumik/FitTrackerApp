@@ -10,15 +10,15 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.CompletedWorkout
-import com.example.fittrackerapp.entities.CompletedWorkoutRepository
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.LastWorkoutRepository
-import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.SetRepository
-import com.example.fittrackerapp.entities.WorkoutDetail
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.entities.set.SetRepository
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetailRepository
 import com.example.fittrackerapp.service.ServiceCommand
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -53,8 +54,8 @@ class WorkoutRecordingService: Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
 
     // --- Работа с тренировкой ---
-    private var workoutId = 0L
-    private var firstDetailId = 0L
+    private var workoutId = ""
+    private var firstDetailId = ""
     private lateinit var completedWorkout: CompletedWorkout
     private var currentSet = Set()
     private var setList = mutableListOf<Set>()
@@ -77,22 +78,20 @@ class WorkoutRecordingService: Service() {
 
     private val _lastCondition = WorkoutRecordingCommunicator.lastCondition
 
-    override fun onCreate() {
-        super.onCreate()
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundService()
 
-        workoutId = intent?.getLongExtra("workoutId", -1) ?: -1
-        firstDetailId = intent?.getLongExtra("detailId", -1) ?: -1
+        workoutId = intent?.getStringExtra("workoutId") ?: ""
+        firstDetailId = intent?.getStringExtra("detailId") ?: ""
         if (!isTimerStarted) {
-            completedWorkout = CompletedWorkout(workoutId =  workoutId)
+            completedWorkout = CompletedWorkout(workoutId = workoutId)
             observeServiceCommands()
             serviceScope.launch {
-                launch { runWorkoutTimer() }
-                launch { runWorkout() }
+                runWorkoutTimer()
+            }
+            serviceScope.launch {
+                runWorkout()
             }
         }
         isTimerStarted = true
@@ -140,19 +139,21 @@ class WorkoutRecordingService: Service() {
     // Логика тренировки
     // -------------------------------------
 
-    var completedWorkoutId = 0L
+    private val completedWorkoutId = WorkoutRecordingCommunicator.completedWorkoutId
 
     private var currentExecExercise: CompletedExercise? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runWorkout() {
-        completedWorkoutId = completedWorkoutRepository.insert(completedWorkout)
-        completedWorkout = completedWorkout.copy(id = completedWorkoutId)
-        val details = workoutDetailRepository.getByWorkoutId(workoutId!!).toMutableList()
+
+        completedWorkoutId.value = UUID.randomUUID().toString()
+        completedWorkout = completedWorkout.copy(id = completedWorkoutId.value)
+        completedWorkoutRepository.insert(completedWorkout)
+        val details = workoutDetailRepository.getByWorkoutId(workoutId).toMutableList()
         val firstExercise = details.first { it.id == firstDetailId }
         details.remove(firstExercise)
         details.add(0, firstExercise)
-        for (i in 0..(details.size-1)) {
+        for (i in 0..<details.size) {
             if (_workoutCondition.value != WorkoutCondition.END) {
                 if (i+1 != details.size) {
                     _nextExercise.value = details[i+1]
@@ -240,20 +241,24 @@ class WorkoutRecordingService: Service() {
                 }
             }
         }
-        currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId)
-        _currentExecExerciseId.value = completedExerciseRepository.insert(currentExecExercise!!)
-        currentExecExercise = currentExecExercise?.copy(id = _currentExecExerciseId.value!!)
+        currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId.value)
+
+        _currentExecExerciseId.value = UUID.randomUUID().toString()
+        currentExecExercise = currentExecExercise?.copy(id = _currentExecExerciseId.value)
+        completedExerciseRepository.insert(currentExecExercise!!)
 
         for (i in 1..detail.setsNumber) {
             if (_workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && _workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                currentSet = Set(completedExerciseId = _currentExecExerciseId.value!!,
+                currentSet = Set(completedExerciseId = _currentExecExerciseId.value,
                     duration =_setSeconds.value, reps = detail.reps, setNumber = i)
-                val setId = setsRepository.insert(currentSet)
+                val setId = UUID.randomUUID().toString()
                 currentSet = currentSet.copy(id = setId)
-                runRestTimer(setId, detail.restDuration)
+                setsRepository.insert(currentSet)
+                setList.add(currentSet)
+                runRestTimer(detail.restDuration)
                 currentSet = currentSet.copy(restDuration = _restSeconds.value)
                 setsRepository.update(currentSet)
                 _restSeconds.value = 0
@@ -328,7 +333,7 @@ class WorkoutRecordingService: Service() {
         }
     }
 
-    private suspend fun runRestTimer(setId: Long, restDuration: Int) {
+    private suspend fun runRestTimer(restDuration: Int) {
         while (true) {
             when (_workoutCondition.value) {
                 WorkoutCondition.REST -> restStopwatch(restDuration)
@@ -336,8 +341,9 @@ class WorkoutRecordingService: Service() {
                 else -> break
             }
         }
-        if (setId != 0L) {
-            setsRepository.updateRestDuration(setId, _restSeconds.value)
+        if (currentSet.id != "") {
+            currentSet = currentSet.copy(restDuration = _restSeconds.value)
+            setsRepository.update(currentSet)
         }
         _setSeconds.value = 0
     }

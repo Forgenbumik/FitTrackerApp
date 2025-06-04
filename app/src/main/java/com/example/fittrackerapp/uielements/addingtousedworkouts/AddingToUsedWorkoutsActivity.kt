@@ -45,6 +45,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,12 +59,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fittrackerapp.entities.exercise.Exercise
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
 import com.example.fittrackerapp.uielements.creatingworkout.CreatingWorkoutActivity
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
+@AndroidEntryPoint
 class AddingToUsedWorkoutsActivity: ComponentActivity() {
 
     private val viewModel: AddingToUsedWorkoutsViewModel by viewModels()
@@ -92,7 +96,7 @@ class AddingToUsedWorkoutsActivity: ComponentActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            val exerciseId = result.data?.getLongExtra("exerciseId", -1)
+            val exerciseId = result.data?.getStringExtra("exerciseId")
             if (exerciseId != null) {
                 viewModel.addSelectedExercise(exerciseId)
             }
@@ -120,7 +124,6 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     onAddToUsedWorkouts: () -> Unit,
     onCreateNewWorkout: () -> Unit,
-    viewModel: AddingToUsedWorkoutsViewModel = viewModel(),
     onBack: () -> Unit
 ) {
     val isCreatingExercise = remember { mutableStateOf(false) }
@@ -210,8 +213,8 @@ fun ActionCard(text: String, color: Color, onClick: () -> Unit) {
 @Composable
 fun AddingExerciseDialogWindow(
     modifier: Modifier = Modifier,
-    viewModel: AddingToUsedWorkoutsViewModel = viewModel(),
-    setIsCreatingExercise: (Boolean) -> Unit
+    setIsCreatingExercise: (Boolean) -> Unit,
+    viewModel: AddingToUsedWorkoutsViewModel = viewModel()
 ) {
     val addingExercise = viewModel.addingExercise.collectAsState().value
     val context = LocalContext.current
@@ -251,7 +254,7 @@ fun AddingExerciseDialogWindow(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            NameField()
+            NameField(addingExercise, viewModel::setExerciseName)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -339,18 +342,17 @@ fun AddingExerciseDialogWindow(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun NameField(viewModel: AddingToUsedWorkoutsViewModel = viewModel()) {
-    val exercise = viewModel.addingExercise.collectAsState()
-    exercise.value?.let {
+fun NameField(exercise: Exercise?, setExerciseName: (String)-> Unit) {
+    if (exercise != null) {
         TextField(
-        value = it.name,
-        onValueChange = { name ->
-            viewModel.setExerciseName(name)
-        },
-        label = { Text("Название упражнения") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    )
+            value = exercise.name,
+            onValueChange = { name ->
+                setExerciseName(name)
+            },
+            label = { Text("Название упражнения") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
     }
 }

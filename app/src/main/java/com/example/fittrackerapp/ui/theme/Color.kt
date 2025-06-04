@@ -12,10 +12,7 @@ val Pink40 = Color(0xFF7D5260)
 
 val DarkBlue = Color(0xFF0D1B2A)
 val Teal = Color(0xFF00838F)
-val LightTeal = Color(0xFF4FB3BF)
-val DividerColor = Color(0xFF1A2A40)
 
-val DeepTurquoise = Color(0xFF003D47)
-val LightTurquoise = Color(0xFF026068)
-val TurquoiseAccent = Color(0xFF83C5BE)
-val DarkerBackground = Color(0xFF023047)
+val FirstTeal = Color(0xFF1B9AAA)
+val DarkTeal = Color(0xFF0F4C5C)
+val Blue = Color(0xFF1D3557)

@@ -1,17 +1,17 @@
 package com.example.fittrackerapp.uielements.executingworkout
 
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.WorkoutDetail
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.example.fittrackerapp.entities.Set
+import com.example.fittrackerapp.entities.set.Set
 import com.example.fittrackerapp.service.ServiceCommand
 import kotlinx.coroutines.channels.Channel
 
 object WorkoutRecordingCommunicator {
     lateinit var serviceCommands: Channel<ServiceCommand>
         private set
-    val completedWorkoutId = MutableStateFlow(0L)
-    val currentExecExerciseId = MutableStateFlow<Long?>(0)
+    val completedWorkoutId = MutableStateFlow("")
+    val currentExecExerciseId = MutableStateFlow("")
     val workoutCondition = MutableStateFlow(WorkoutCondition.SET)
     val lastCondition = MutableStateFlow(WorkoutCondition.PAUSE)
     val workoutSeconds = MutableStateFlow(0)

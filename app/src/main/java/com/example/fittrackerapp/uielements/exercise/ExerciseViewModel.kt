@@ -4,10 +4,9 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseRepository
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +32,7 @@ class ExerciseViewModel @Inject constructor(
     private val _plannedRestDuration = MutableStateFlow(0)
     val plannedRestDuration: StateFlow<Int> = _plannedRestDuration
 
-    val exerciseId: Long? get() = savedStateHandle["exerciseId"]
+    val exerciseId: String? get() = savedStateHandle["exerciseId"]
 
     init {
         viewModelScope.launch {
@@ -54,4 +53,6 @@ class ExerciseViewModel @Inject constructor(
     fun setPlannedRestDuration(duration: Int) {
         _plannedRestDuration.value = duration
     }
+
+
 }

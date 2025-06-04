@@ -42,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.entities.WorkoutDetail
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
 import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingService
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutActivity
@@ -54,7 +54,7 @@ class WorkoutActivity: ComponentActivity() {
 
     private val viewModel: WorkoutViewModel by viewModels()
 
-    var workoutId = 0L
+    var workoutId = ""
     var workoutName = ""
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -68,7 +68,7 @@ class WorkoutActivity: ComponentActivity() {
                 }
             }
         }
-        workoutId = intent.getLongExtra("workoutId", -1)
+        workoutId = intent.getStringExtra("workoutId") ?: ""
         workoutName = intent.getStringExtra("workoutName") ?: "Тренировка"
     }
 
@@ -201,7 +201,7 @@ fun ExerciseItem(
             val restText = if (workoutDetail.isRestManually) {
                 "отдых: вручную"
             } else {
-                "отдых: ${viewModel.FormatTime(workoutDetail.restDuration)}"
+                "отдых: ${viewModel.formatTime(workoutDetail.restDuration)}"
             }
             Text(restText, color = Color.White)
         }

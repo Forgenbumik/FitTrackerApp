@@ -1,14 +1,11 @@
 package com.example.fittrackerapp.abstractclasses.repositories
 
-import android.window.BackEvent
-import androidx.compose.runtime.DisposableEffect
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.ExerciseDao
-import com.example.fittrackerapp.entities.Workout
-import com.example.fittrackerapp.entities.WorkoutDao
-import com.example.fittrackerapp.entities.WorkoutDetailDao
-import com.example.fittrackerapp.entities.WorkoutDetailRepository
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.exercise.ExerciseDao
+import com.example.fittrackerapp.entities.workout.Workout
+import com.example.fittrackerapp.entities.workout.WorkoutDao
+import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetailDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine

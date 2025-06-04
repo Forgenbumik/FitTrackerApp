@@ -1,14 +1,19 @@
 package com.example.fittrackerapp.uielements.main
 
+import android.content.ComponentName
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,36 +43,38 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.App
 import com.example.fittrackerapp.R
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
-import com.example.fittrackerapp.abstractclasses.repositories.WorkoutsAndExercisesRepository
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
-import com.example.fittrackerapp.entities.Exercise
+import com.example.fittrackerapp.entities.exercise.Exercise
 import com.example.fittrackerapp.entities.LastWorkout
-import com.example.fittrackerapp.entities.LastWorkoutRepository
-import com.example.fittrackerapp.entities.Workout
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.workout.Workout
 import com.example.fittrackerapp.uielements.FileIcon
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import com.example.fittrackerapp.uielements.usedworkouts.UsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.workout.WorkoutActivity
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
 import com.example.fittrackerapp.uielements.completedworkouts.CompletedWorkoutsActivity
+import com.example.fittrackerapp.uielements.executingexercise.ExecutingExerciseActivity
+import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutActivity
+import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingService
 import com.example.fittrackerapp.uielements.exercise.ExerciseActivity
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private lateinit var signInLauncher: ActivityResultLauncher<Intent>
 
     private val viewModel: MainScreenViewModel by viewModels()
 
@@ -81,11 +89,15 @@ class MainActivity : ComponentActivity() {
                         onFavouriteWorkoutClick = { workout -> onFavouriteWorkoutClick(workout) },
                         onLastWorkoutClick = { workout -> onLastWorkoutClick(workout) },
                         onAllWorkoutsClick = { onUsedWorkoutsClick()},
-                        onAllCompletedClick = { onAllCompletedClick() }
+                        onAllCompletedClick = { onAllCompletedClick() },
+                        onActiveWorkoutClick = { onActiveWorkoutClick() },
+                        onActiveExerciseClick = { onActiveExerciseClick() }
                     )
                 }
             }
         }
+
+        viewModel.loadActiveWorkout(this)
     }
 
     fun onFavouriteWorkoutClick(workout: BaseWorkout) {
@@ -134,6 +146,16 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, CompletedWorkoutsActivity::class.java)
         startActivity(intent)
     }
+
+    fun onActiveWorkoutClick() {
+        val intent = Intent(this, ExecutingWorkoutActivity::class.java)
+        startActivity(intent)
+    }
+
+    fun onActiveExerciseClick() {
+        val intent = Intent(this, ExecutingExerciseActivity::class.java)
+        startActivity(intent)
+    }
 }
 
 @Composable
@@ -143,9 +165,15 @@ fun MainScreen(
     onFavouriteWorkoutClick: (BaseWorkout) -> Unit,
     onLastWorkoutClick: (LastWorkout) -> Unit,
     onAllWorkoutsClick: () -> Unit,
-    onAllCompletedClick: () -> Unit
+    onAllCompletedClick: () -> Unit,
+    onActiveWorkoutClick: () -> Unit,
+    onActiveExerciseClick: () -> Unit
 ) {
     val lastWorkouts = viewModel.lastWorkouts.collectAsState().value
+
+    val workoutSeconds = viewModel.workoutSeconds.collectAsState()
+
+    val exerciseSeconds = viewModel.exerciseSeconds.collectAsState()
 
     Column(
         modifier = modifier
@@ -163,6 +191,15 @@ fun MainScreen(
         Spacer(Modifier.height(8.dp))
         FavouriteWorkoutList(onFavouriteWorkoutClick, onAllWorkoutsClick)
         Spacer(Modifier.height(16.dp))
+
+        if (workoutSeconds.value != 0) {
+            WorkoutTimerBlock(workoutSeconds, Modifier, onActiveWorkoutClick, viewModel::formatTime)
+        }
+
+        if (exerciseSeconds.value != 0) {
+            WorkoutTimerBlock(exerciseSeconds, Modifier, onActiveExerciseClick, viewModel::formatTime)
+        }
+
         Text(
             text = "Последние тренировки",
             color = Color(0xFF00B4D8),
@@ -258,12 +295,12 @@ fun LastWorkoutList(workoutList: List<LastWorkout>, onClick: (LastWorkout) -> Un
                     LastWorkoutItem(workout, onClick)
                     HorizontalDivider(color = Color.DarkGray)
                 }
-                Row(modifier = Modifier.align(Alignment.End)
-                    .clickable {
-                        onAllCompletedClick()
-                    }) {
-                    Text("Ещё", color = Color(0xFF00B4D8), fontWeight = FontWeight.Medium)
-                }
+            }
+            Row(modifier = Modifier.align(Alignment.End)
+                .clickable {
+                    onAllCompletedClick()
+                }) {
+                Text("Ещё", color = Color(0xFF00B4D8), fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -309,5 +346,31 @@ fun LastWorkoutItem(
                 fontSize = 12.sp
             )
         }
+    }
+}
+
+@Composable
+fun WorkoutTimerBlock(
+    seconds: State<Int>,
+    modifier: Modifier = Modifier,
+    onActiveWorkoutClick: () -> Unit,
+    formatTime: (Int) -> String
+) {
+    val secondsValue = seconds.value
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFB06EA2)) // Бирюзовый
+            .clickable { onActiveWorkoutClick() }
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = formatTime(secondsValue),
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.LightGray
+        )
     }
 }

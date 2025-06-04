@@ -76,8 +76,8 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.R
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
-import com.example.fittrackerapp.entities.Exercise
-import com.example.fittrackerapp.entities.Workout
+import com.example.fittrackerapp.entities.exercise.Exercise
+import com.example.fittrackerapp.entities.workout.Workout
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.FileIcon
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
@@ -113,7 +113,7 @@ class UsedWorkoutsActivity: ComponentActivity() {
         startActivity(intent)
     }
 
-    fun changeWorkoutClick(workoutId: Long) {
+    fun changeWorkoutClick(workoutId: String) {
         val intent = Intent(this, CreatingWorkoutActivity::class.java).apply {
             putExtra("workoutId", workoutId)
         }
@@ -148,7 +148,7 @@ fun MainScreen(
     modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
     onBackClick: () -> Unit,
     onPlusClick: () -> Unit,
-    changeWorkoutClick: (Long) -> Unit,
+    changeWorkoutClick: (String) -> Unit,
     onWorkoutClick: (BaseWorkout) -> Unit,
     viewModel: UsedWorkoutsViewModel = viewModel()
 ) {
@@ -344,7 +344,7 @@ fun ButtonMore(
 @Composable
 fun ActionMenu(
     menuOffset: Offset,
-    changeWorkoutClick: (Long) -> Unit,
+    changeWorkoutClick: (String) -> Unit,
     onDismiss: () -> Unit,
     isChangeWindowVisible: MutableState<Boolean>,
     viewModel: UsedWorkoutsViewModel = viewModel(),

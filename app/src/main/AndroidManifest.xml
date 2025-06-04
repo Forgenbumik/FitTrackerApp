@@ -9,9 +9,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.FitTrackerApp"
         tools:targetApi="31">
@@ -22,28 +22,31 @@
         <service android:name=".uielements.executingworkout.WorkoutRecordingService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
-        <activity
-            android:name=".uielements.main.MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.FitTrackerApp">
+        <activity android:name=".uielements.splash.SplashActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".uielements.main.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FitTrackerApp"/>
         <activity android:name=".uielements.workout.WorkoutActivity"
             android:theme="@style/Theme.FitTrackerApp"/>
         <activity android:name=".uielements.completedworkout.CompletedWorkoutActivity" />
         <activity android:name=".uielements.executingworkout.ExecutingWorkoutActivity" />
+        <activity android:name=".uielements.executingexercise.ExecutingExerciseActivity"/>
         <activity android:name=".uielements.usedworkouts.UsedWorkoutsActivity" />
-        <activity android:name=".uielements.ResultsActivity"/>
+        <activity android:name=".uielements.authorization.AuthorizationActivity"
+            android:exported="false"/>
         <activity android:name=".uielements.creatingworkout.CreatingWorkoutActivity"/>
         <activity android:name=".uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity"/>
         <activity android:name=".uielements.exercise.ExerciseActivity"/>
         <activity android:name=".uielements.completedexercise.CompletedExerciseActivity"/>
         <activity android:name=".uielements.allworkouts.AllExercisesActivity"/>
-
+        <activity android:name=".uielements.completedworkouts.CompletedWorkoutsActivity"/>
+        <activity android:name=".uielements.downloaddata.DownloadDataActivity"/>
     </application>
-
 </manifest>

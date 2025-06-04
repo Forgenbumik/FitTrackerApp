@@ -31,6 +31,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -45,8 +47,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedWorkout
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
 import com.example.fittrackerapp.ui.theme.DarkBlue
 import com.example.fittrackerapp.ui.theme.Teal
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
@@ -189,12 +191,20 @@ fun CompletedWorkoutItem(
         colors = CardDefaults.cardColors(containerColor = Teal),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = workoutName.value,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium
             )
+            IconButton(
+                onClick = { viewModel.deleteCompletedWorkout(completedWorkout) }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Удалить"
+                )
+            }
         }
     }
 }

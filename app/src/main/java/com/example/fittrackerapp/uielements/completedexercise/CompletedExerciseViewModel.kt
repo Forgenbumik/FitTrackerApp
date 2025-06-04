@@ -7,11 +7,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fittrackerapp.entities.CompletedExercise
-import com.example.fittrackerapp.entities.CompletedExerciseRepository
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
+import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.example.fittrackerapp.entities.Set
-import com.example.fittrackerapp.entities.SetRepository
+import com.example.fittrackerapp.entities.set.Set
+import com.example.fittrackerapp.entities.set.SetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -36,7 +36,7 @@ class CompletedExerciseViewModel @Inject constructor(
     private val _changingSet: MutableStateFlow<Set?> = MutableStateFlow(Set())
     val changingSet: StateFlow<Set?> = _changingSet
 
-    val completedExerciseId: Long? get() = savedStateHandle["completedExerciseId"]
+    val completedExerciseId: String? get() = savedStateHandle["completedExerciseId"]
 
     init {
         viewModelScope.launch {
@@ -52,7 +52,7 @@ class CompletedExerciseViewModel @Inject constructor(
         }
     }
 
-    suspend fun loadCompletedExercise(completedExerciseId: Long) {
+    suspend fun loadCompletedExercise(completedExerciseId: String) {
         _completedExercise.value = completedExerciseRepository.getById(completedExerciseId)
     }
 
@@ -72,6 +72,24 @@ class CompletedExerciseViewModel @Inject constructor(
         val seconds = secs % 60
         val minutes = secs / 60 % 60
         val hours = secs / 3600
-        return "%02d:%02d:%02d".format(hours, minutes, seconds)
+
+        return if (hours > 0) {
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
+    }
+
+    fun deleteSet(set: Set) {
+        viewModelScope.launch {
+            setRepository.delete(set)
+        }
+    }
+
+    fun saveWorkoutNotes(notes: String?) {
+        viewModelScope.launch {
+            _completedExercise.value = _completedExercise.value.copy(notes = notes)
+            completedExerciseRepository.update(_completedExercise.value)
+        }
     }
 }

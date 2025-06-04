@@ -3,6 +3,7 @@ package com.example.fittrackerapp.uielements.executingexercise
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -53,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.WorkoutCondition
-import com.example.fittrackerapp.entities.Set
+import com.example.fittrackerapp.entities.set.Set
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
@@ -120,8 +121,6 @@ class ExecutingExerciseActivity : ComponentActivity() {
             startActivity(intent)
             finish()
         }
-
-
     }
 }
 
@@ -165,10 +164,18 @@ fun MainScreen(
         Text(exerciseName, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(14.dp))
         if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
-            val file = File(context.filesDir, exerciseVideoPath.value)
-            if (file != null) {
-                VideoPlayerFromFile(file)
+            val currentPath = exerciseVideoPath.value
+            if (currentPath.isNotBlank() && currentPath != "null") {
+                val file = File(context.filesDir, currentPath)
+                if (file.exists()) {
+                    VideoPlayerFromFile(file)
+                } else {
+                    Log.e("DEBUG", "Файл по пути ${file.absolutePath} не найден.")
+                }
+            } else {
+                Log.e("DEBUG", "Невалидный путь к видео: '$currentPath'")
             }
+
 
             SetsTable(setList, viewModel::formatTime, isShowChangeWindow)
         }
@@ -350,7 +357,7 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
     Box(
         modifier = Modifier
             .fillMaxSize() // Заполняем весь экран
-            .padding(16.dp).background(Color.Gray) // Добавляем отступы, если нужно
+            .padding(16.dp).background(Color.Black) // Добавляем отступы, если нужно
     ) {
         Column(
             modifier = Modifier
@@ -368,17 +375,19 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
                 || lastCondition == WorkoutCondition.SET
                 && workoutCondition == WorkoutCondition.PAUSE) { //если сейчас подход
                 FirstSetButtons(modifier = buttonModifier, stringSetTime, setCondition, isShowChangeWindow)
+                Spacer(Modifier.height(8.dp))
             }
             else if (workoutCondition == WorkoutCondition.REST
                 || lastCondition == WorkoutCondition.REST
                 && workoutCondition == WorkoutCondition.PAUSE) {//если сейчас отдых после подхода
                 RestButtons(stringRestTime, setCondition, modifier = buttonModifier)
+                Spacer(Modifier.height(8.dp))
             }
-
             if (workoutCondition == WorkoutCondition.SET
                 || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                 || workoutCondition == WorkoutCondition.REST) { //все кроме паузы (кнопки пауза, далее)
                 SecondSetButtons(workoutCondition, lastCondition, setCondition, modifier = buttonModifier)
+                Spacer(Modifier.height(8.dp))
             } else if (workoutCondition == WorkoutCondition.PAUSE) { //если сейчас пауза (кнопки продолжить, завершить)
                 PauseButtons(lastCondition, setCondition, modifier = buttonModifier, onEndClick = onEndClick)
             }

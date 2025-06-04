@@ -2,9 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)  version "2.1.0"
-    id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.google.services)
+    kotlin("kapt")
 }
 
 android {
@@ -18,7 +18,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.example.fittrackerapp.HiltTestRunner"
 
         kapt {
             arguments {arg("room.schemaLocation", "$projectDir/schemas")}
@@ -59,6 +59,9 @@ dependencies {
     implementation(libs.androidx.databinding.adapters)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.room.runtime.android)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.core.ktx)
+    implementation(libs.firebase.storage.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -77,13 +80,25 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
-    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation ("org.mockito:mockito-core:5.2.0")
-    testImplementation ("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation ("junit:junit:4.13.2")
-    implementation("com.google.dagger:hilt-android:2.56")
-    kapt("com.google.dagger:hilt-compiler:2.56")
-    implementation("com.google.firebase:firebase-auth:22.3.1")
-    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+    implementation(libs.jetbrains.kotlinx.metadata.jvm)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation (libs.junit)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.ui.auth)
+    implementation(libs.play.services.auth)
+    testImplementation(libs.androidx.core)
+    androidTestImplementation(libs.androidx.core)
+    androidTestImplementation(libs.junit.v115)
+    androidTestImplementation(libs.espresso.core.v351)
+    androidTestImplementation(libs.androidx.room.testing)
+    // Hilt
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    kapt("com.google.dagger:hilt-compiler:2.56.2")
+
+// Для тестов
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.56.2")
+    kaptAndroidTest("com.google.dagger:hilt-android-compiler:2.56.2")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 }

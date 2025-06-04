@@ -1,4 +1,4 @@
-package com.example.fittrackerapp.entities
+package com.example.fittrackerapp.entities.workout
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -15,27 +15,30 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Entity(tableName = "workouts")
 @RequiresApi(Build.VERSION_CODES.O)
 data class Workout(
-    @PrimaryKey(autoGenerate = true) override val id: Long = 0,
+    @PrimaryKey(autoGenerate = false) override val id: String = "",
     @ColumnInfo override var name: String = "",
     @ColumnInfo(name = "is_user_defined") val isUserDefined: Boolean = true,
     @ColumnInfo(name = "is_used") override val isUsed: Boolean = true,
     @ColumnInfo(name = "last_used_date") override val lastUsedDate: LocalDateTime = LocalDateTime.now(),
     @ColumnInfo(name = "is_favourite") override val isFavourite: Boolean = false,
-    @ColumnInfo(name = "is_deleted") override val isDeleted: Boolean = false
+    @ColumnInfo(name = "is_deleted") override val isDeleted: Boolean = false,
+    @ColumnInfo(name = "user_id") val userId: String? = null
 ): BaseWorkout()
 
 @Dao
 interface WorkoutDao {
 
     @Insert(entity = Workout::class)
-    suspend fun insert(workout: Workout): Long
+    suspend fun insert(workout: Workout)
 
     @Query("SELECT * FROM workouts WHERE id = :workoutId")
-    suspend fun getById(workoutId: Long): Workout
+    suspend fun getById(workoutId: String): Workout
 
     @Delete
     suspend fun delete(workout: Workout)
@@ -63,11 +66,15 @@ interface WorkoutDao {
 
     @Query("SELECT * from workouts where is_deleted = 0 and is_used = 0")
     suspend fun getNotUsed(): List<Workout>
+
+    @Insert
+    suspend fun insertAll(workouts: List<Workout>)
 }
 
-class WorkoutRepository(private val dao: WorkoutDao) {
-    suspend fun insert(workout: Workout): Long {
-        return withContext(Dispatchers.IO) {
+@Singleton
+class WorkoutRepository @Inject constructor(private val dao: WorkoutDao) {
+    suspend fun insert(workout: Workout) {
+        withContext(Dispatchers.IO) {
             dao.insert(workout)
         }
     }
@@ -79,7 +86,7 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         }
     }
 
-    suspend fun getById(id: Long): Workout {
+    suspend fun getById(id: String): Workout {
         return withContext(Dispatchers.IO) {
             dao.getById(id)
         }
@@ -102,6 +109,4 @@ class WorkoutRepository(private val dao: WorkoutDao) {
             dao.update(workout)
         }
     }
-
-
 }

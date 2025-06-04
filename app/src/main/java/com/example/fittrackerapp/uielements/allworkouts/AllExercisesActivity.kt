@@ -26,7 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fittrackerapp.entities.Exercise
+import com.example.fittrackerapp.entities.exercise.Exercise
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fittrackerapp.abstractclasses.BaseWorkout
-import com.example.fittrackerapp.entities.Workout
+import com.example.fittrackerapp.entities.workout.Workout
 import com.example.fittrackerapp.uielements.FileIcon
 import java.io.File
 import androidx.compose.foundation.layout.size
