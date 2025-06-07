@@ -23,16 +23,16 @@
             android:foregroundServiceType="dataSync"
             android:exported="false" />
         <activity android:name=".uielements.splash.SplashActivity"
-            android:exported="true">
+            android:exported="true"/>
+        <activity
+            android:name=".uielements.main.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FitTrackerApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".uielements.main.MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.FitTrackerApp"/>
         <activity android:name=".uielements.workout.WorkoutActivity"
             android:theme="@style/Theme.FitTrackerApp"/>
         <activity android:name=".uielements.completedworkout.CompletedWorkoutActivity" />

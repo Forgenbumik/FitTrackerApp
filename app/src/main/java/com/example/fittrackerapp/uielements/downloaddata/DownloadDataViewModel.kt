@@ -48,44 +48,47 @@ class DownloadDataViewModel @Inject constructor(
     private val _isDataDownloaded = MutableStateFlow(false)
     val isDataDownloaded: StateFlow<Boolean> = _isDataDownloaded
 
-    init {
-        viewModelScope.launch {
-            downloadData()
-        }
-    }
-
-    suspend fun downloadData() {
+    suspend fun downloadData(context: Context) {
 
         val workoutList = workoutService.getWorkoutsForUserOrDefault()
+        Log.d("DownloadData", "Workouts: ${workoutList.size}")
         workoutDao.insertAll(workoutList)
+        Log.d("DownloadData", "Inserted workouts into Room: ${workoutList.size}")
 
         val exerciseList = exerciseService.getExercisesForUserOrDefault()
+        Log.d("DownloadData", "Workouts: ${exerciseList.size}")
 
         exerciseList.forEach {
-            if (it.iconPath != "") {
-
-            }
+            downloadExerciseMediaIfNeeded(context, it.iconPath, it.videoPath)
         }
 
         exerciseDao.insertAll(exerciseList)
+        Log.d("DownloadData", "Inserted workouts into Room: ${exerciseList.size}")
 
         val completedWorkoutList = completedWorkoutService.getAll().toObjects(CompletedWorkout::class.java)
+        Log.d("DownloadData", "Workouts: ${completedWorkoutList.size}")
         completedWorkoutDao.insertAll(completedWorkoutList)
+        Log.d("DownloadData", "Inserted workouts into Room: ${completedWorkoutList.size}")
 
         val completedExerciseList = completedExerciseService.getAll().toObjects(CompletedExercise::class.java)
+        Log.d("DownloadData", "Workouts: ${completedExerciseList.size}")
         completedExerciseDao.insertAll(completedExerciseList)
+        Log.d("DownloadData", "Inserted workouts into Room: ${completedExerciseList.size}")
 
         val setList = setService.getAll().toObjects(Set::class.java)
+        Log.d("DownloadData", "Workouts: ${setList.size}")
         setDao.insertAll(setList)
+        Log.d("DownloadData", "Inserted workouts into Room: ${setList.size}")
 
         val workoutDetailList = workoutDetailService.getAll().toObjects(com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail::class.java)
+        Log.d("DownloadData", "Workouts: ${workoutDetailList.size}")
         workoutDetailDao.insertAll(workoutDetailList)
-
+        Log.d("DownloadData", "Inserted workouts into Room: ${workoutDetailList.size}")
         _isDataDownloaded.value = true
     }
 
-    suspend fun downloadExerciseMediaIfNeeded(context: Context, iconPath: String, videoPath: String) {
-        iconPath.let {
+    private suspend fun downloadExerciseMediaIfNeeded(context: Context, iconPath: String?, videoPath: String?) {
+        iconPath?.let {
             val file = getLocalFile(context, it)
             if (!file.exists()) {
                 downloadAndSaveFile(it, file)
@@ -100,8 +103,8 @@ class DownloadDataViewModel @Inject constructor(
         }
     }
 
-    fun getLocalFile(context: Context, relativePath: String): File {
-        val subfolder = if (relativePath.startsWith("images/")) "exercise_icons"
+    private fun getLocalFile(context: Context, relativePath: String): File {
+        val subfolder = if (relativePath.startsWith("images/")) "exercise_images"
         else if (relativePath.startsWith("videos/")) "exercise_videos"
         else "other"
 
@@ -112,7 +115,7 @@ class DownloadDataViewModel @Inject constructor(
         return File(dir, filename)
     }
 
-    suspend fun downloadAndSaveFile(
+    private suspend fun downloadAndSaveFile(
         relativePath: String,
         targetFile: File
     ): Boolean {

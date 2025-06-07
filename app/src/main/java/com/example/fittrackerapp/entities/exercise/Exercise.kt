@@ -101,14 +101,14 @@ class ExerciseRepository @Inject constructor(
     suspend fun insert(name: String) {
         val exercise = Exercise(name = name)
         withContext(Dispatchers.IO) {
-            service.upload(exercise)
+            //service.upload(exercise)
             dao.insert(exercise)
         }
     }
 
     suspend fun insert(exercise: Exercise){
         withContext(Dispatchers.IO) {
-            service.upload(exercise)
+            //service.upload(exercise)
             dao.insert(exercise)
         }
     }
@@ -125,15 +125,15 @@ class ExerciseRepository @Inject constructor(
 
     suspend fun delete(exercise: Exercise) {
         withContext(Dispatchers.IO) {
-            service.delete(exercise)
+            //service.delete(exercise)
             dao.delete(exercise)
         }
     }
 
     suspend fun update(exercise: Exercise) {
         withContext(Dispatchers.IO) {
-            val exercisetoUpdate =
-            service.upload(exercise)
+
+            //service.upload(exercise)
             dao.update(exercise)
         }
     }

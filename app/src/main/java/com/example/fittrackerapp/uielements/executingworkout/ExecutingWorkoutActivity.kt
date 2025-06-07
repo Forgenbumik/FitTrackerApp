@@ -116,6 +116,8 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 
     val currentExercise = viewModel.currentExercise.collectAsState().value
 
+    val currentExecExercise = viewModel.currentExecExercise.collectAsState().value
+
     val stringExerciseTime = viewModel.stringExerciseTime.collectAsState().value
 
     val stringSetTime = viewModel.stringSetTime.collectAsState()
@@ -141,12 +143,10 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
         Text(workoutName, fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,)
         Spacer(modifier = Modifier.height(12.dp))
-        if (currentExercise != null) {
-            Text(currentExercise.name, fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold)
-        }
+        Text(currentExercise.name, fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold)
         if (!(lastCondition == WorkoutCondition.REST_AFTER_EXERCISE && workoutCondition == WorkoutCondition.PAUSE || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE)) {
-            val file = currentExercise?.videoPath?.let { File(context.filesDir, it) }
+            val file = currentExercise.videoPath?.let { File(context.filesDir, it) }
             if (file != null) {
                 VideoPlayerFromFile(file)
             }

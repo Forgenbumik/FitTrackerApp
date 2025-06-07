@@ -7,8 +7,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.WorkoutCondition
+import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
 import com.example.fittrackerapp.entities.exercise.Exercise
 import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import com.example.fittrackerapp.entities.set.SetRepository
@@ -37,7 +37,8 @@ class ExecutingWorkoutViewModel @Inject constructor(
     val isSaveCompleted: StateFlow<Boolean> = WorkoutRecordingCommunicator.isSaveCompleted
 
     var completedWorkoutId = ""
-    private val currentExecExerciseId = WorkoutRecordingCommunicator.currentExecExerciseId
+    private val _currentExecExercise = WorkoutRecordingCommunicator.currentExecExercise
+    val currentExecExercise: StateFlow<CompletedExercise?> = _currentExecExercise
 
     val nextExercise: StateFlow<WorkoutDetail?> = WorkoutRecordingCommunicator.nextExercise
 
@@ -61,21 +62,23 @@ class ExecutingWorkoutViewModel @Inject constructor(
     val lastCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.lastCondition
 
     private val _currentExercise = MutableStateFlow(Exercise())
-    val currentExercise: StateFlow<Exercise?> = _currentExercise
+    val currentExercise: StateFlow<Exercise> = _currentExercise
 
     init {
-
         viewModelScope.launch {
-            currentExecExerciseId
+            _currentExecExercise
                 .filterNotNull()
-                .filter { it != "" }
-                .flatMapLatest { id ->
-                    setsRepository.getByCompletedExerciseIdFlow(id)
+                .filter { it.id != "" }
+                .flatMapLatest {
+                    setsRepository.getByCompletedExerciseIdFlow(it.id)
                 }
                 .collect { newSets ->
                     _setList.clear()
                     _setList.addAll(newSets)
                 }
+            if (_currentExecExercise.value != null) {
+                _currentExercise.value = exerciseRepository.getById(_currentExecExercise.value!!.exerciseId)
+            }
         }
 
         viewModelScope.launch {

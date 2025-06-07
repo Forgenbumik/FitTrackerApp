@@ -60,8 +60,6 @@ class WorkoutRecordingService: Service() {
     private var currentSet = Set()
     private var setList = mutableListOf<Set>()
     private var exerciseJob: Job? = null
-    private val _stringWorkoutTime = MutableStateFlow("00:00")
-    val stringWorkoutTime: StateFlow<String> = _stringWorkoutTime
 
     // --- Коммуникатор ---
     private val _serviceCommands = WorkoutRecordingCommunicator.serviceCommands
@@ -74,7 +72,7 @@ class WorkoutRecordingService: Service() {
     private val _changingSet = WorkoutRecordingCommunicator.changingSet
     private val _nextExercise = WorkoutRecordingCommunicator.nextExercise
     private val _isSaveCompleted = WorkoutRecordingCommunicator.isSaveCompleted
-    private val _currentExecExerciseId = WorkoutRecordingCommunicator.currentExecExerciseId
+    private val _currentExecExercise = WorkoutRecordingCommunicator.currentExecExercise
 
     private val _lastCondition = WorkoutRecordingCommunicator.lastCondition
 
@@ -141,8 +139,6 @@ class WorkoutRecordingService: Service() {
 
     private val completedWorkoutId = WorkoutRecordingCommunicator.completedWorkoutId
 
-    private var currentExecExercise: CompletedExercise? = null
-
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runWorkout() {
 
@@ -159,18 +155,18 @@ class WorkoutRecordingService: Service() {
                     _nextExercise.value = details[i+1]
                 }
                 runExercise(details[i])
-                currentExecExercise = currentExecExercise?.copy(duration = _exerciseSeconds.value)
+                _currentExecExercise.value = _currentExecExercise.value?.copy(duration = _exerciseSeconds.value)
                 _exerciseSeconds.value = 0
                 if (_workoutCondition.value != WorkoutCondition.END) {
                     setCondition(WorkoutCondition.REST_AFTER_EXERCISE)
                 }
                 runRestAfterExerciseTimer()
                 if (setList.isNotEmpty()) {
-                    completedExerciseRepository.update(currentExecExercise!!)
+                    completedExerciseRepository.update(_currentExecExercise.value!!)
                 }
                 else {
-                    completedExerciseRepository.delete(currentExecExercise!!)
-                    currentExecExercise = null
+                    completedExerciseRepository.delete(_currentExecExercise.value!!)
+                    _currentExecExercise.value = null
                 }
                 setList.clear()
             }
@@ -215,7 +211,6 @@ class WorkoutRecordingService: Service() {
             && _workoutCondition.value != WorkoutCondition.END) {
             _workoutSeconds.value++
             completedWorkout = completedWorkout.copy(duration = _workoutSeconds.value)
-            _stringWorkoutTime.value = formatTime(_workoutSeconds.value)
             delay(1000)
         }
     }
@@ -241,18 +236,18 @@ class WorkoutRecordingService: Service() {
                 }
             }
         }
-        currentExecExercise = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId.value)
+        _currentExecExercise.value = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId.value)
 
-        _currentExecExerciseId.value = UUID.randomUUID().toString()
-        currentExecExercise = currentExecExercise?.copy(id = _currentExecExerciseId.value)
-        completedExerciseRepository.insert(currentExecExercise!!)
+        val currentExecExerciseId = UUID.randomUUID().toString()
+        _currentExecExercise.value = _currentExecExercise.value?.copy(id = currentExecExerciseId)
+        completedExerciseRepository.insert(_currentExecExercise.value!!)
 
         for (i in 1..detail.setsNumber) {
             if (_workoutCondition.value != WorkoutCondition.REST_AFTER_EXERCISE
                 && _workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                currentSet = Set(completedExerciseId = _currentExecExerciseId.value,
+                currentSet = Set(completedExerciseId = currentExecExerciseId,
                     duration =_setSeconds.value, reps = detail.reps, setNumber = i)
                 val setId = UUID.randomUUID().toString()
                 currentSet = currentSet.copy(id = setId)
@@ -264,8 +259,8 @@ class WorkoutRecordingService: Service() {
                 _restSeconds.value = 0
             }
         }
-        currentExecExercise = currentExecExercise?.copy(duration = _exerciseSeconds.value)
-        completedExerciseRepository.update(currentExecExercise!!)
+        _currentExecExercise.value = _currentExecExercise.value?.copy(duration = _exerciseSeconds.value)
+        completedExerciseRepository.update(_currentExecExercise.value!!)
     }
 
     private suspend fun runExerciseTimer() {

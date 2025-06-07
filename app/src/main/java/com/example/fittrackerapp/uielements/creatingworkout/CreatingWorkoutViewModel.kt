@@ -54,7 +54,7 @@ class CreatingWorkoutViewModel @Inject constructor(
         _workout.value = Workout(id = id)
 
         viewModelScope.launch {
-            if (workoutId != "") {
+            if (workoutId != "" && workoutId != null) {
                 _workout.value = workoutId?.let { workoutRepository.getById(it) }
                 workoutDetailRepository.getByWorkoutIdFlow(workoutId!!).collect {
                     _workoutDetailsList.addAll(it)

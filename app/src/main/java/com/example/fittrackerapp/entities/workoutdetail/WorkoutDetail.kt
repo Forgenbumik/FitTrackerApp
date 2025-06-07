@@ -82,7 +82,7 @@ class WorkoutDetailRepository @Inject constructor(
 
     suspend fun insert(workoutDetail: WorkoutDetail) {
         withContext(Dispatchers.IO) {
-            firebaseSource.upload(workoutDetail)
+            //firebaseSource.upload(workoutDetail)
             dao.insert(workoutDetail)
         }
     }
@@ -95,14 +95,14 @@ class WorkoutDetailRepository @Inject constructor(
 
     suspend fun delete(workoutDetail: WorkoutDetail) {
         withContext(Dispatchers.IO) {
-            firebaseSource.delete(workoutDetail)
+            //firebaseSource.delete(workoutDetail)
             dao.delete(workoutDetail)
         }
     }
 
     suspend fun update(workoutDetail: WorkoutDetail) {
         withContext(Dispatchers.IO) {
-            firebaseSource.upload(workoutDetail)
+            //firebaseSource.upload(workoutDetail)
             dao.update(workoutDetail)
         }
     }

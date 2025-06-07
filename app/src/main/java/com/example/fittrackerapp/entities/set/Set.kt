@@ -76,7 +76,7 @@ class SetRepository @Inject constructor(private val dao: SetDao,
 
     suspend fun insert(set: Set) {
         withContext(Dispatchers.IO) {
-            firestore.upload(set)
+            //firestore.upload(set)
             dao.insert(set)
         }
     }
@@ -89,14 +89,14 @@ class SetRepository @Inject constructor(private val dao: SetDao,
 
     suspend fun delete(set: Set) {
         withContext(Dispatchers.IO) {
-            firestore.delete(set)
+            //firestore.delete(set)
             dao.delete(set)
         }
     }
 
     suspend fun update(set: Set) {
         withContext(Dispatchers.IO) {
-            firestore.upload(set)
+            //firestore.upload(set)
             dao.update(set)
         }
     }

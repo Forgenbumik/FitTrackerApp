@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -227,6 +228,9 @@ fun FavouriteWorkoutList(
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
+            if (workouts.isEmpty()) {
+                Text("Здесь будут ваши избранные тренировки")
+            }
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(workouts) { workout ->
                     FavouriteWorkoutItem(
@@ -360,17 +364,29 @@ fun WorkoutTimerBlock(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFB06EA2)) // Бирюзовый
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF493266))
             .clickable { onActiveWorkoutClick() }
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = formatTime(secondsValue),
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.LightGray
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Тренировка",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = formatTime(secondsValue),
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = Color(0xFFEEEEEE),
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        }
     }
 }

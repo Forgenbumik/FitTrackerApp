@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
@@ -122,6 +123,7 @@ fun TopBar(onBackClick: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
@@ -150,6 +152,7 @@ fun MainScreen(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CompletedWorkoutsList(
     modifier: Modifier = Modifier,
@@ -169,6 +172,7 @@ fun CompletedWorkoutsList(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CompletedWorkoutItem(
     modifier: Modifier = Modifier,
@@ -176,8 +180,6 @@ fun CompletedWorkoutItem(
     viewModel: CompletedWorkoutsViewModel = viewModel(),
     onCompletedWorkoutClick: (BaseCompletedWorkout) -> Unit
 ) {
-
-
     val workoutName = remember { mutableStateOf("") }
 
     LaunchedEffect(completedWorkout) {
@@ -187,22 +189,48 @@ fun CompletedWorkoutItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onCompletedWorkoutClick(completedWorkout) },
+            .clickable { onCompletedWorkoutClick(completedWorkout) }
+            .padding(vertical = 6.dp, horizontal = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Teal),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = workoutName.value,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium
-            )
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = workoutName.value,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = completedWorkout.beginTime.toLocalDate().toString(),
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = viewModel.formatTime(completedWorkout.duration),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
             IconButton(
                 onClick = { viewModel.deleteCompletedWorkout(completedWorkout) }
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Удалить"
+                    contentDescription = "Удалить",
+                    tint = Color.White
                 )
             }
         }

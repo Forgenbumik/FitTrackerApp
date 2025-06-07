@@ -70,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
 import com.example.fittrackerapp.ui.theme.Blue
+import com.example.fittrackerapp.ui.theme.DarkTeal
 import com.example.fittrackerapp.ui.theme.FirstTeal
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseViewModel
 import com.example.fittrackerapp.uielements.main.MainActivity
@@ -177,7 +178,7 @@ fun MainScreen(
                     .fillMaxWidth()
                     .padding(top = 12.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.LightGray)
+                    .background(DarkTeal)
                     .padding(16.dp)
             ) {
                 NotesField(notes)
@@ -285,14 +286,14 @@ fun ExerciseItem(
             Text(exerciseName.value, fontSize = 18.sp, color = Color.White, fontWeight = FontWeight.Bold)
             Text("Длительность: ${viewModel.formatTime(completedExercise.duration)}", color = Color.LightGray)
             Text("${exerciseSetsNumber.value} подходов, ${exerciseTotalReps.value} повторений", color = Color.LightGray)
-            IconButton(
-                onClick = { viewModel.deleteCompeletedExercise(completedExercise) }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Удалить"
-                )
-            }
+        }
+        IconButton(
+            onClick = { viewModel.deleteCompeletedExercise(completedExercise) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Удалить"
+            )
         }
     }
 }
@@ -316,7 +317,7 @@ fun NotesField(notes: MutableState<String?>, viewModel: CompletedWorkoutViewMode
     TextField(
         value = notes.value.orEmpty(),
         onValueChange = { notes.value = it },
-        placeholder = { Text("Название тренировки") },
+        placeholder = { Text("Заметки") },
         modifier = Modifier.fillMaxWidth(),
         singleLine = false,
         colors = colors,

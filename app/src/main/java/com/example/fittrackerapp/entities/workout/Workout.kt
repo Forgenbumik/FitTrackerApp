@@ -69,6 +69,9 @@ interface WorkoutDao {
 
     @Insert
     suspend fun insertAll(workouts: List<Workout>)
+
+    @Query("SELECT name FROM workouts WHERE id = :workoutId")
+    suspend fun getWorkoutName(workoutId: String): String
 }
 
 @Singleton
@@ -107,6 +110,12 @@ class WorkoutRepository @Inject constructor(private val dao: WorkoutDao) {
     suspend fun update(workout: Workout) {
         withContext(Dispatchers.IO) {
             dao.update(workout)
+        }
+    }
+
+    suspend fun getWorkoutName(workoutId: String): String {
+        return withContext(Dispatchers.IO) {
+            dao.getWorkoutName(workoutId)
         }
     }
 }

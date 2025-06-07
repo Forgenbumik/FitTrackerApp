@@ -64,6 +64,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.entities.set.Set
 import com.example.fittrackerapp.ui.theme.Blue
+import com.example.fittrackerapp.ui.theme.DarkTeal
 import com.example.fittrackerapp.ui.theme.FirstTeal
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
@@ -160,7 +161,7 @@ fun MainScreen(modifier: Modifier, exerciseName: String, onBackClick: () -> Unit
                     .fillMaxWidth()
                     .padding(top = 12.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.LightGray)
+                    .background(DarkTeal)
                     .padding(16.dp)
             ) {
                 NotesField(notes)
@@ -214,6 +215,7 @@ fun SetsTableHeaders() {
         Text("Вес", modifier = modifier, textAlign = TextAlign.Center)
         Text("Время", modifier = modifier, textAlign = TextAlign.Center)
         Text("Изменить", modifier = modifier, textAlign = TextAlign.Center)
+        Text("Удалить", modifier = modifier, textAlign = TextAlign.Center)
     }
 }
 
@@ -254,6 +256,11 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                             contentDescription = "Редактировать"
                         )
                     }
+                }
+                Box(modifier = Modifier
+                    .aspectRatio(2f)
+                    .weight(1f), contentAlignment = Alignment.Center) {
+
                     IconButton(
                         onClick = { deleteSet(setList[i]) }
                     ) {
@@ -360,7 +367,7 @@ fun NotesField(notes: MutableState<String?>, viewModel: CompletedExerciseViewMod
     TextField(
         value = notes.value.orEmpty(),
         onValueChange = { notes.value = it },
-        placeholder = { Text("Название тренировки") },
+        placeholder = { Text("Заметки") },
         modifier = Modifier.fillMaxWidth(),
         singleLine = false,
         colors = colors,

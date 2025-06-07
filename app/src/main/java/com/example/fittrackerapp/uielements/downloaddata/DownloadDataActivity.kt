@@ -32,11 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.R
 import com.example.fittrackerapp.uielements.main.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class DownloadDataActivity: ComponentActivity() {
@@ -54,6 +56,12 @@ class DownloadDataActivity: ComponentActivity() {
                     AnimatedLoadingIndicator(Modifier.padding(innerPadding), ::openMainActivity)
                 }
             }
+        }
+
+        val context = this
+
+        lifecycleScope.launch {
+            viewModel.downloadData(context)
         }
     }
 

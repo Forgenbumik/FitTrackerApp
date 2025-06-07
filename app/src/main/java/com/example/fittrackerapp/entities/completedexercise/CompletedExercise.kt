@@ -107,7 +107,7 @@ class CompletedExerciseRepository @Inject constructor(
 
     suspend fun insert(completedExercise: CompletedExercise) {
         withContext(Dispatchers.IO) {
-            firebaseSource.upload(completedExercise)
+            //firebaseSource.upload(completedExercise)
             dao.insert(completedExercise)
         }
     }
@@ -120,14 +120,14 @@ class CompletedExerciseRepository @Inject constructor(
 
     suspend fun delete(completedExercise: CompletedExercise) {
         withContext(Dispatchers.IO) {
-            firebaseSource.delete(completedExercise)
+            //firebaseSource.delete(completedExercise)
             dao.delete(completedExercise)
         }
     }
 
     suspend fun update(completedExercise: CompletedExercise) {
         withContext(Dispatchers.IO) {
-            firebaseSource.upload(completedExercise)
+            //firebaseSource.upload(completedExercise)
             dao.update(completedExercise)
         }
     }
@@ -168,8 +168,7 @@ class CompletedExerciseRepository @Inject constructor(
 
     suspend fun getExerciseName(exerciseId: String): String {
         return withContext(Dispatchers.IO) {
-            val exercise = dao.getExerciseById(exerciseId)
-            exercise.name
+            dao.getExerciseById(exerciseId).name
         }
     }
 }
