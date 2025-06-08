@@ -99,7 +99,7 @@ class CreatingWorkoutViewModel @Inject constructor(
         } else {
             viewModelScope.launch {
                 _workout.value?.let { workoutRepository.update(it) }
-                workoutDetailsList.forEach {
+                workoutDetailsList.toList().forEach {
                     if (it.id == "") {
                         val detailToAdd = _workout.value?.id.let { id -> it.copy(workoutId = id!!) }
                         workoutDetailRepository.insert(detailToAdd)
