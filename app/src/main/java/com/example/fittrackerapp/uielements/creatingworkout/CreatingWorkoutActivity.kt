@@ -286,14 +286,14 @@ fun ExerciseItem(isShowChangeWindow: MutableState<Boolean>, workoutDetail: Worko
                 color = Color.LightGray,
                 fontSize = 12.sp
             )
-            IconButton(
-                onClick = { deleteWorkoutDetail(workoutDetail) }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Удалить"
-                )
-            }
+        }
+        IconButton(
+            onClick = { deleteWorkoutDetail(workoutDetail) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Удалить"
+            )
         }
     }
 }

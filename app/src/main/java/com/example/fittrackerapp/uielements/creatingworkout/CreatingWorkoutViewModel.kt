@@ -90,7 +90,7 @@ class CreatingWorkoutViewModel @Inject constructor(
     fun saveWorkout() {
         if (workoutId == "") {
             viewModelScope.launch {
-                workoutDetailsList.forEach {
+                workoutDetailsList.toList().forEach {
                     val detailToAdd = _workout.value?.id.let { id -> it.copy(workoutId = id!!) }
                     workoutDetailRepository.insert(detailToAdd)
                 }
