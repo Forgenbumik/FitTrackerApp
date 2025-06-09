@@ -66,6 +66,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
@@ -81,6 +82,8 @@ import kotlin.reflect.KSuspendFunction1
 class CompletedWorkoutActivity: ComponentActivity()  {
     private val viewModel: CompletedWorkoutViewModel by viewModels()
 
+    private var workoutName = ""
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,10 +92,12 @@ class CompletedWorkoutActivity: ComponentActivity()  {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(modifier = Modifier.padding(innerPadding),
+                        workoutName,
                                onExerciseClick = { exercise, exerciseName -> onExerciseClick(exercise, exerciseName) },
                                onBackClick = ::onBackPressed)
                 }
             }
+            workoutName = intent.getStringExtra("workoutName") ?: "Тренировка"
         }
     }
 
@@ -116,6 +121,7 @@ class CompletedWorkoutActivity: ComponentActivity()  {
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
+    workoutName: String,
     onExerciseClick: (CompletedExercise, String) -> Unit,
     viewModel: CompletedWorkoutViewModel = viewModel(),
     onBackClick: () -> Unit
@@ -135,13 +141,24 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            IconButton(onClick = { onBackClick() }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Назад",
-                    tint = Color(0xFF1B9AAA)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { onBackClick() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = Color(0xFF1B9AAA)
+                    )
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                Text(
+                    workoutName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -314,6 +331,8 @@ fun NotesField(notes: MutableState<String?>, viewModel: CompletedWorkoutViewMode
         unfocusedPlaceholderColor = Color.Gray
     )
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     TextField(
         value = notes.value.orEmpty(),
         onValueChange = { notes.value = it },
@@ -327,6 +346,7 @@ fun NotesField(notes: MutableState<String?>, viewModel: CompletedWorkoutViewMode
         ),
         keyboardActions = KeyboardActions(
             onDone = {
+                keyboardController?.hide()
                 viewModel.saveWorkoutNotes(notes.value) // <- вызывается при нажатии галочки
             }
         )

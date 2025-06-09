@@ -96,10 +96,6 @@ class CompletedWorkoutViewModel @Inject constructor(
         return null
     }
 
-    fun setWorkoutNotes(notes: String) {
-        _completedWorkout.value = _completedWorkout.value.copy(notes = notes)
-    }
-
     fun deleteCompeletedExercise(completedExercise: CompletedExercise) {
         viewModelScope.launch {
             completedExerciseRepository.delete(completedExercise)

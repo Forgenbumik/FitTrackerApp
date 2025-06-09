@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -54,7 +56,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
@@ -62,6 +66,8 @@ import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
 import com.example.fittrackerapp.entities.workoutdetail.WorkoutDetail
+import com.example.fittrackerapp.ui.theme.Blue
+import com.example.fittrackerapp.ui.theme.FirstTeal
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.addingtousedworkouts.AddingToUsedWorkoutsActivity
 import com.example.fittrackerapp.uielements.allworkouts.AllExercisesActivity
@@ -76,12 +82,10 @@ import kotlin.reflect.KSuspendFunction1
 class CreatingWorkoutActivity: ComponentActivity() {
     private val viewModel: CreatingWorkoutViewModel by viewModels()
 
-    var workoutId: String = ""
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -97,7 +101,7 @@ class CreatingWorkoutActivity: ComponentActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val exerciseId = result.data?.getStringExtra("exerciseId")
-            viewModel.addExerciseToList(WorkoutDetail(workoutId= workoutId, exerciseId = exerciseId!!))
+            viewModel.addExerciseToList(WorkoutDetail(exerciseId = exerciseId!!))
         }
     }
 
@@ -143,6 +147,12 @@ fun MainScreen(
     val workout = viewModel.workout.collectAsState()
     val isShowChangeWindow = remember { mutableStateOf(false) }
 
+    val name = remember { mutableStateOf("") }
+
+    if (workout.value != null) {
+        name.value = workout.value!!.name
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -173,7 +183,7 @@ fun MainScreen(
             )
 
             // Поле для ввода названия тренировки
-            workout.value?.let { NameField(it.name) }
+            NameField(name)
 
             // Список упражнений
             ExercisesList(
@@ -203,23 +213,38 @@ fun MainScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun NameField(name: String, viewModel: CreatingWorkoutViewModel = viewModel()) {
+fun NameField(name: MutableState<String>, viewModel: CreatingWorkoutViewModel = viewModel()) {
+    val colors = TextFieldDefaults.colors(
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        focusedContainerColor = Blue,
+        unfocusedContainerColor = Blue,
+        cursorColor = FirstTeal,
+        focusedIndicatorColor = FirstTeal,
+        unfocusedIndicatorColor = Color.DarkGray,
+        focusedPlaceholderColor = Color.LightGray,
+        unfocusedPlaceholderColor = Color.Gray
+    )
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     TextField(
-        value = name,
-        onValueChange = { viewModel.setWorkoutName(it) },
-        label = { Text("Название тренировки") },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFF1E1E2E),
-            unfocusedContainerColor = Color(0xFF2A2A3A),
-            focusedLabelColor = Color(0xFF1B9AAA),
-            unfocusedLabelColor = Color.Gray,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            cursorColor = Color(0xFF1B9AAA)
+        value = name.value,
+        onValueChange = { name.value = it },
+        placeholder = { Text("Наименование") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = false,
+        colors = colors,
+        shape = RoundedCornerShape(12.dp),
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Done // <- показывает галочку
         ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
+        keyboardActions = KeyboardActions(
+            onDone = {
+                keyboardController?.hide()
+                viewModel.setWorkoutName(name.value) // <- вызывается при нажатии галочки
+            }
+        )
     )
 }
 

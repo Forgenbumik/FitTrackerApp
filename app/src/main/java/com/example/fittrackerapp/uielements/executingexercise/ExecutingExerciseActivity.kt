@@ -27,10 +27,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -59,11 +63,13 @@ import com.example.fittrackerapp.ui.theme.FitTrackerAppTheme
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.VideoPlayerFromFile
 import com.example.fittrackerapp.uielements.completedexercise.CompletedExerciseActivity
+import com.example.fittrackerapp.uielements.executingworkout.ExecutingWorkoutViewModel
 import com.example.fittrackerapp.uielements.main.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 import java.io.File
 
 @AndroidEntryPoint
@@ -111,7 +117,11 @@ class ExecutingExerciseActivity : ComponentActivity() {
     fun onEndClick() {
 
         val intent = Intent(this, CompletedExerciseActivity::class.java).apply {
-            putExtra("completedExerciseId", viewModel.completedExerciseId)
+            putExtra("completedExerciseId", viewModel._completedExerciseId.value)
+        }
+
+        Intent(this, ExerciseRecordingService::class.java).also {
+            stopService(it)
         }
 
         lifecycleScope.launch {
@@ -172,8 +182,6 @@ fun MainScreen(
                 } else {
                     Log.e("DEBUG", "Файл по пути ${file.absolutePath} не найден.")
                 }
-            } else {
-                Log.e("DEBUG", "Невалидный путь к видео: '$currentPath'")
             }
 
 
@@ -182,7 +190,7 @@ fun MainScreen(
 
         Text(stringExerciseTime)
         LastSet(lastCondition, workoutCondition, stringSetTime,
-            stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow)
+            stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow, stringExerciseTime)
     }
 
     if (isShowChangeWindow.value && changingSet.value != null) {
@@ -240,11 +248,14 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
                 Box(modifier = Modifier
                     .aspectRatio(2f)
                     .weight(1f), contentAlignment = Alignment.Center) {
-                    Button(onClick = {
+                    IconButton(onClick = {
                         viewModel.setChangingSet(setListValue[i])
                         isShowChangeWindow.value = true
                     }) {
-                        Text("Изменить")
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Редактировать"
+                        )
                     }
                 }
             }
@@ -257,51 +268,48 @@ fun SetsStrings(setList: SnapshotStateList<Set>, formatTime: (Int) -> String, is
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewModel: ExecutingExerciseViewModel = viewModel()) {
-    ModalBottomSheet(onDismissRequest = { isShowChangeWindow.value = false }) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text("Изменение подхода", style = MaterialTheme.typography.titleMedium)
 
+    ModalBottomSheet(
+        onDismissRequest = { isShowChangeWindow.value = false }
+    ) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Повторения", style = MaterialTheme.typography.bodyMedium)
-                Text("Вес (кг)", style = MaterialTheme.typography.bodyMedium)
+                Text("Повторения")
+                Text("Вес")
             }
 
             var selectedRepsNumber = set.reps
+
             var selectedWeight = set.weight
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                ListNumberReps(Modifier.weight(1f), set.reps) { selectedItem ->
-                    selectedRepsNumber = selectedItem
+            Column {
+                Row {
+                    val modifier = Modifier.weight(0.5f)
+                    com.example.fittrackerapp.uielements.executingworkout.ListNumberReps(
+                        modifier,
+                        set.reps,
+                        onItemSelected = { selectedItem ->
+                            selectedRepsNumber = selectedItem
+                        })
+                    com.example.fittrackerapp.uielements.executingworkout.ListWeight(modifier,
+                        selectedWeight.toInt(),
+                        (selectedWeight - selectedWeight.toInt()).toInt(),
+                        onItemSelected = { selectedInteger, selectedDecimal ->
+                            selectedWeight = selectedInteger + selectedDecimal.toDouble() / 10
+                        })
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                ListWeight(Modifier.weight(1f), selectedWeight.toInt(), ((selectedWeight - selectedWeight.toInt()) * 10).toInt()) {
-                        selectedInt, selectedDecimal ->
-                    selectedWeight = selectedInt + selectedDecimal.toDouble() / 10
+                Button(
+                    onClick = {
+                        viewModel.updateSet(set, selectedRepsNumber, selectedWeight)
+                        isShowChangeWindow.value = false
+                        viewModel.setChangingSet(null)
+                    }
+                ) {
+                    Text("ОК")
                 }
-            }
-
-            Button(
-                onClick = {
-                    viewModel.updateSet(set, selectedRepsNumber, selectedWeight)
-                    isShowChangeWindow.value = false
-                    viewModel.setChangingSet(null)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Сохранить")
             }
         }
     }
@@ -351,22 +359,35 @@ fun ListWeight(modifier: Modifier, integerPart: Int, decimalPart: Int, onItemSel
 fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
             stringSetTime: State<String>, stringRestTime: State<String>,
             setCondition: (WorkoutCondition) -> Unit, onEndClick: () -> Unit,
-            isShowChangeWindow: MutableState<Boolean>
+            isShowChangeWindow: MutableState<Boolean>, stringExerciseTime: String
 ) {
-
     Box(
         modifier = Modifier
             .fillMaxSize() // Заполняем весь экран
-            .padding(16.dp).background(Color.Black) // Добавляем отступы, если нужно
+            .padding(16.dp).background(Color(0xFF18181A)) // Добавляем отступы, если нужно
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.5f)
+                .aspectRatio(1.2f)
                 .background(Color(0xFF1C1C1E), RoundedCornerShape(20.dp)) // Тёмный фон и скругление
                 .align(Alignment.BottomCenter)
                 .padding(12.dp) // Размещаем внизу экрана
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringExerciseTime,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
             val buttonModifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -384,7 +405,6 @@ fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
                 Spacer(Modifier.height(8.dp))
             }
             if (workoutCondition == WorkoutCondition.SET
-                || workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                 || workoutCondition == WorkoutCondition.REST) { //все кроме паузы (кнопки пауза, далее)
                 SecondSetButtons(workoutCondition, lastCondition, setCondition, modifier = buttonModifier)
                 Spacer(Modifier.height(8.dp))

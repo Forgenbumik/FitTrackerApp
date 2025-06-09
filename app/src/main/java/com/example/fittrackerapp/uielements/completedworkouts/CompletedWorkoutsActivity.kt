@@ -71,16 +71,17 @@ class CompletedWorkoutsActivity: ComponentActivity() {
             FitTrackerAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(Modifier.padding(innerPadding),
-                        onCompletedWorkoutClick = { baseCompletedWorkout -> onCompletedWorkoutClick(baseCompletedWorkout)}, onBackClick ={onBackClick()})
+                        onCompletedWorkoutClick = { baseCompletedWorkout, workoutName -> onCompletedWorkoutClick(baseCompletedWorkout, workoutName)}, onBackClick ={onBackClick()})
                 }
             }
         }
     }
 
-    fun onCompletedWorkoutClick(baseCompletedWorkout: BaseCompletedWorkout) {
+    fun onCompletedWorkoutClick(baseCompletedWorkout: BaseCompletedWorkout, workoutName: String) {
         if (baseCompletedWorkout is CompletedWorkout) {
             val intent = Intent(this, CompletedWorkoutActivity::class.java)
             intent.putExtra("completedWorkoutId", baseCompletedWorkout.id)
+            intent.putExtra("workoutName", workoutName)
             startActivity(intent)
         }
         else if (baseCompletedWorkout is CompletedExercise) {
@@ -129,7 +130,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     viewModel: CompletedWorkoutsViewModel = viewModel(),
     onBackClick: () -> Unit,
-    onCompletedWorkoutClick: (BaseCompletedWorkout) -> Unit
+    onCompletedWorkoutClick: (BaseCompletedWorkout, String) -> Unit
 ) {
     val completedWorkouts = viewModel.completedWorkouts.collectAsState().value
 
@@ -157,7 +158,7 @@ fun MainScreen(
 fun CompletedWorkoutsList(
     modifier: Modifier = Modifier,
     completedWorkouts: List<BaseCompletedWorkout>,
-    onCompletedWorkoutClick: (BaseCompletedWorkout) -> Unit
+    onCompletedWorkoutClick: (BaseCompletedWorkout, String) -> Unit
 ) {
     LazyColumn(
         modifier = modifier,
@@ -178,7 +179,7 @@ fun CompletedWorkoutItem(
     modifier: Modifier = Modifier,
     completedWorkout: BaseCompletedWorkout,
     viewModel: CompletedWorkoutsViewModel = viewModel(),
-    onCompletedWorkoutClick: (BaseCompletedWorkout) -> Unit
+    onCompletedWorkoutClick: (BaseCompletedWorkout, String) -> Unit
 ) {
     val workoutName = remember { mutableStateOf("") }
 
@@ -189,7 +190,7 @@ fun CompletedWorkoutItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onCompletedWorkoutClick(completedWorkout) }
+            .clickable { onCompletedWorkoutClick(completedWorkout, workoutName.value) }
             .padding(vertical = 6.dp, horizontal = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Teal),
         shape = RoundedCornerShape(16.dp),

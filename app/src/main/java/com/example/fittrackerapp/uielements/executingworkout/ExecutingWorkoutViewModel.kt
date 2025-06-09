@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
 import com.example.fittrackerapp.entities.exercise.Exercise
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,14 +33,13 @@ import javax.inject.Inject
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingWorkoutViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
-    private val setsRepository: SetRepository,
+    private val setsRepository: SetRepository
 ): ViewModel() {
 
     val isSaveCompleted: StateFlow<Boolean> = WorkoutRecordingCommunicator.isSaveCompleted
 
     var completedWorkoutId = ""
     private val _currentExecExercise = WorkoutRecordingCommunicator.currentExecExercise
-    val currentExecExercise: StateFlow<CompletedExercise?> = _currentExecExercise
 
     val nextExercise: StateFlow<WorkoutDetail?> = WorkoutRecordingCommunicator.nextExercise
 
@@ -76,9 +77,13 @@ class ExecutingWorkoutViewModel @Inject constructor(
                     _setList.clear()
                     _setList.addAll(newSets)
                 }
-            if (_currentExecExercise.value != null) {
-                _currentExercise.value = exerciseRepository.getById(_currentExecExercise.value!!.exerciseId)
-            }
+        }
+        viewModelScope.launch {
+            _currentExecExercise
+                .filterNotNull()
+                .collect {
+                    _currentExercise.value = exerciseRepository.getById(it.exerciseId)
+                }
         }
 
         viewModelScope.launch {

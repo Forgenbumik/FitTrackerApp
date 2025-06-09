@@ -29,7 +29,7 @@ class CreatingWorkoutViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository
 ): ViewModel() {
 
-    private var workoutId: String? get() = savedStateHandle["workoutId"]
+    private var workoutId: String get() = savedStateHandle["workoutId"] ?: ""
         set(value) {
             savedStateHandle["workoutId"] = value
         }
@@ -41,7 +41,7 @@ class CreatingWorkoutViewModel @Inject constructor(
     val selectedExercise: StateFlow<WorkoutDetail> =_selectedExercise
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private val _workout: MutableStateFlow<Workout?> = MutableStateFlow(null)
+    private val _workout: MutableStateFlow<Workout> = MutableStateFlow(Workout())
     @RequiresApi(Build.VERSION_CODES.O)
     val workout: StateFlow<Workout?> = _workout
 
@@ -49,17 +49,12 @@ class CreatingWorkoutViewModel @Inject constructor(
     val isSaveCompleted: StateFlow<Boolean> = _isSaveCompleted
 
     init {
-
-        val id = UUID.randomUUID().toString()
-        _workout.value = Workout(id = id)
-
-        viewModelScope.launch {
-            if (workoutId != "" && workoutId != null) {
-                _workout.value = workoutId?.let { workoutRepository.getById(it) }
-                workoutDetailRepository.getByWorkoutIdFlow(workoutId!!).collect {
+        if (workoutId != "") {
+            viewModelScope.launch {
+                _workout.value = workoutRepository.getById(workoutId)
+                workoutDetailRepository.getByWorkoutIdFlow(workoutId).collect {
                     _workoutDetailsList.addAll(it)
                 }
-
             }
         }
 
@@ -69,7 +64,7 @@ class CreatingWorkoutViewModel @Inject constructor(
     }
 
     fun setWorkoutName(name: String) {
-        _workout.value = _workout.value?.copy(name = name)
+        _workout.value = _workout.value.copy(name = name)
     }
 
     suspend fun generateName(): String {
@@ -88,28 +83,29 @@ class CreatingWorkoutViewModel @Inject constructor(
     }
 
     fun saveWorkout() {
-        if (workoutId == "") {
-            viewModelScope.launch {
-                workoutDetailsList.toList().forEach {
-                    val detailToAdd = _workout.value?.id.let { id -> it.copy(workoutId = id!!) }
+        viewModelScope.launch {
+            if (workoutId == "") {
+                workoutId = UUID.randomUUID().toString()
+                _workout.value = _workout.value!!.copy(id = workoutId)
+                workoutRepository.insert(_workout.value!!)
+            }
+            else {
+                workoutRepository.update(_workout.value!!)
+            }
+
+            workoutDetailsList.toList().forEach {
+                if (it.id == "") {
+
+                    val workoutDetailToAdd = UUID.randomUUID().toString()
+
+                    val detailToAdd = it.copy(id = workoutDetailToAdd, workoutId = workoutId)
                     workoutDetailRepository.insert(detailToAdd)
                 }
-                _isSaveCompleted.value = true
-            }
-        } else {
-            viewModelScope.launch {
-                _workout.value?.let { workoutRepository.update(it) }
-                workoutDetailsList.toList().forEach {
-                    if (it.id == "") {
-                        val detailToAdd = _workout.value?.id.let { id -> it.copy(workoutId = id!!) }
-                        workoutDetailRepository.insert(detailToAdd)
-                    }
-                    else {
-                        workoutDetailRepository.update(it)
-                    }
+                else {
+                    workoutDetailRepository.update(it)
                 }
-                _isSaveCompleted.value = true
             }
+            _isSaveCompleted.value = true
         }
     }
 

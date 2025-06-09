@@ -26,7 +26,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -96,14 +98,20 @@ class ExecutingWorkoutActivity : ComponentActivity() {
 
         val intent = Intent(this, CompletedWorkoutActivity::class.java).apply {
             putExtra("completedWorkoutId", viewModel.completedWorkoutId)
+            putExtra("workoutName", workoutName)
         }
+
+        Intent(this, WorkoutRecordingService::class.java).also {
+            stopService(it)
+        }
+
 
         lifecycleScope.launch {
             viewModel.isSaveCompleted
                 .filter { it } // пропускаем, пока не станет true
                 .first()       // ждём первое значение true
-            startActivity(intent)
             finish()
+            startActivity(intent)
         }
     }
 }
@@ -115,8 +123,6 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
                viewModel: ExecutingWorkoutViewModel = viewModel()) {
 
     val currentExercise = viewModel.currentExercise.collectAsState().value
-
-    val currentExecExercise = viewModel.currentExecExercise.collectAsState().value
 
     val stringExerciseTime = viewModel.stringExerciseTime.collectAsState().value
 
@@ -139,7 +145,14 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
     val isShowChangeWindow = remember { mutableStateOf(false) }
 
     val changingSet = viewModel.changingSet.collectAsState()
-    Column(modifier = modifier) {
+
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+    ) {
         Text(workoutName, fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,)
         Spacer(modifier = Modifier.height(12.dp))
@@ -154,14 +167,14 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
             SetsTable(setList, viewModel::formatTime, isShowChangeWindow, viewModel::setChangingSet)
         }
 
-        Text(stringExerciseTime)
+
         if (workoutCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     || lastCondition == WorkoutCondition.REST_AFTER_EXERCISE
                     && workoutCondition == WorkoutCondition.PAUSE) {
             ExerciseInformation(nextExercise, stringExerciseRestTime, viewModel::formatTime)
         }
         LastSet(lastCondition, workoutCondition, stringSetTime,
-            stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow)
+            stringRestTime, viewModel::setCondition, onEndClick, isShowChangeWindow, stringExerciseTime)
     }
 
     if (isShowChangeWindow.value && changingSet.value != null) {
@@ -173,8 +186,12 @@ fun MainScreen(modifier: Modifier = Modifier.windowInsetsPadding(WindowInsets.st
 @Composable
 fun SetsTable(setList: SnapshotStateList<Set>, formatTime: (Int) -> String,
               isShowChangeWindow: MutableState<Boolean>, setChangingSet: (Set) -> Unit) {
-    SetsTableHeaders()
-    SetsStrings(setList, formatTime, isShowChangeWindow, setChangingSet)
+    Box {
+        Column {
+            SetsTableHeaders()
+            SetsStrings(setList, formatTime, isShowChangeWindow, setChangingSet)
+        }
+    }
 }
 
 @Composable
@@ -246,7 +263,10 @@ fun SetChangeWindow(set: Set, isShowChangeWindow: MutableState<Boolean>, viewMod
         onDismissRequest = { isShowChangeWindow.value = false }
     ) {
         Column {
-            Row {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text("Повторения")
                 Text("Вес")
             }
@@ -376,27 +396,40 @@ fun ExerciseInformation(
 fun LastSet(lastCondition: WorkoutCondition, workoutCondition: WorkoutCondition,
             stringSetTime: State<String>, stringRestTime: State<String>,
             setCondition: (WorkoutCondition) -> Unit, onEndClick: () -> Unit,
-            isShowChangeWindow: MutableState<Boolean>) {
+            isShowChangeWindow: MutableState<Boolean>, stringExerciseTime: String) {
 
     Box(
         modifier = Modifier
-            .fillMaxSize() // Заполняем весь экран
+            .fillMaxSize()
             .padding(16.dp)
-            .background(Color(0xFF18181A))// Добавляем отступы, если нужно
+            .background(Color(0xFF18181A))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.5f)
+                .aspectRatio(1.2f)
                 .background(Color(0xFF1C1C1E), RoundedCornerShape(20.dp)) // Тёмный фон и скругление
                 .align(Alignment.BottomCenter)
-                .padding(12.dp) // Размещаем внизу экрана
+                .padding(12.dp)
         ) {
             val buttonModifier = Modifier
         .fillMaxWidth()
         .weight(1f)
         .padding(horizontal = 4.dp)
-
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringExerciseTime,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
         if (workoutCondition == WorkoutCondition.SET
             || (lastCondition == WorkoutCondition.SET && workoutCondition == WorkoutCondition.PAUSE)) {
             FirstSetButtons(modifier = buttonModifier, stringSetTime, setCondition, isShowChangeWindow)

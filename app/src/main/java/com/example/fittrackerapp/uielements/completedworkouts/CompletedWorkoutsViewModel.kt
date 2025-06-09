@@ -31,7 +31,7 @@ class CompletedWorkoutsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             completedWorkoutsAndExercisesRepository.getAllFlow().collect {
-                _completedWorkouts.value = it
+                _completedWorkouts.value = it.sortedByDescending { completedWorkout -> completedWorkout.beginTime }
             }
         }
     }

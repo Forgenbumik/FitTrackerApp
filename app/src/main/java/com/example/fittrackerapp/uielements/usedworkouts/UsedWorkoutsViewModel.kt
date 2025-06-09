@@ -106,13 +106,6 @@ class UsedWorkoutsViewModel @Inject constructor(
         _selectedWorkout.value = baseWorkout
     }
 
-    fun setExerciseName(name: String) {
-        _selectedWorkout.value?.name ?: name
-        viewModelScope.launch {
-            exerciseRepository.update(_selectedWorkout.value as Exercise)
-        }
-    }
-
     fun saveExerciseIcon(exercise: Exercise, uri: Uri, context: Context) {
         try {
             val subDir = File(context.filesDir, "exercise_images")
@@ -219,6 +212,18 @@ class UsedWorkoutsViewModel @Inject constructor(
             Toast.makeText(context, "Изображение удалено", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(context, "Произошла ошибка", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun saveWorkoutName(name: String) {
+
+        when (_selectedWorkout.value) {
+            is Exercise -> {
+                val exerciseToUpdate = (_selectedWorkout.value as Exercise).copy(name = name)
+                viewModelScope.launch {
+                    exerciseRepository.update(exerciseToUpdate)
+                }
+            }
         }
     }
 }

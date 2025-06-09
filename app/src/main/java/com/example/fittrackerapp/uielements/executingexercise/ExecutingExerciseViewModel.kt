@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fittrackerapp.WorkoutCondition
@@ -12,27 +11,30 @@ import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import com.example.fittrackerapp.entities.set.Set
 import com.example.fittrackerapp.entities.set.SetRepository
 import com.example.fittrackerapp.service.ServiceCommand
-import com.example.fittrackerapp.uielements.executingworkout.WorkoutRecordingCommunicator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 class ExecutingExerciseViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val exerciseRepository: ExerciseRepository,
     private val setRepository: SetRepository
 ): ViewModel() {
 
-    var completedExerciseId = ""
+    val _completedExerciseId = ExerciseRecordingCommunicator.completedExerciseId
 
     val exerciseId: StateFlow<String> = ExerciseRecordingCommunicator.exerciseId
 
-    val isSaveCompleted: StateFlow<Boolean> = WorkoutRecordingCommunicator.isSaveCompleted
+    val isSaveCompleted: StateFlow<Boolean> = ExerciseRecordingCommunicator.isSaveCompleted
 
     private var _setList = mutableStateListOf<Set>()
     val setList: SnapshotStateList<Set> get() = _setList
@@ -46,25 +48,22 @@ class ExecutingExerciseViewModel @Inject constructor(
     private val _stringRestTime = MutableStateFlow("00:00")
     val stringRestTime: StateFlow<String> = _stringRestTime
 
-    val changingSet: StateFlow<Set?> = WorkoutRecordingCommunicator.changingSet
-    val workoutCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.workoutCondition
-    val lastCondition: StateFlow<WorkoutCondition> = WorkoutRecordingCommunicator.lastCondition
+    val changingSet: StateFlow<Set?> = ExerciseRecordingCommunicator.changingSet
+    val workoutCondition: StateFlow<WorkoutCondition> = ExerciseRecordingCommunicator.workoutCondition
+    val lastCondition: StateFlow<WorkoutCondition> = ExerciseRecordingCommunicator.lastCondition
 
     init {
-        if (completedExerciseId != "") {
-            viewModelScope.launch {
-                setRepository.getByCompletedExerciseIdFlow(completedExerciseId)
-                    .collect { newSets ->
-                        _setList.clear()
-                        _setList.addAll(newSets)
-                    }
-            }
-            viewModelScope.launch {
-                    setRepository.getByCompletedExerciseIdFlow(completedExerciseId).collect { newSets ->
+        viewModelScope.launch {
+            _completedExerciseId
+                .filterNotNull()
+                .filter { it != "" }
+                .flatMapLatest {
+                    setRepository.getByCompletedExerciseIdFlow(it)
+                }
+                .collect { newSets ->
                     _setList.clear()
                     _setList.addAll(newSets)
                 }
-            }
         }
         viewModelScope.launch {
             ExerciseRecordingCommunicator.exerciseSeconds.collectLatest {
@@ -107,7 +106,7 @@ class ExecutingExerciseViewModel @Inject constructor(
                 WorkoutCondition.SET -> sendCommand(ServiceCommand.SetCommand)
                 WorkoutCondition.REST -> sendCommand(ServiceCommand.RestCommand)
                 WorkoutCondition.PAUSE -> sendCommand(ServiceCommand.PauseCommand)
-                WorkoutCondition.REST_AFTER_EXERCISE -> sendCommand(ServiceCommand.RestAfterExerciseCommand)
+                WorkoutCondition.REST_AFTER_EXERCISE -> {}
                 WorkoutCondition.END -> sendCommand(ServiceCommand.EndCommand)
             }
         }

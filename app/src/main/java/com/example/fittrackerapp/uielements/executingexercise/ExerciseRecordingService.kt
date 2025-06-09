@@ -9,15 +9,19 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fittrackerapp.WorkoutCondition
 import com.example.fittrackerapp.entities.completedexercise.CompletedExercise
 import com.example.fittrackerapp.entities.completedexercise.CompletedExerciseRepository
 import com.example.fittrackerapp.entities.exercise.Exercise
 import com.example.fittrackerapp.entities.exercise.ExerciseRepository
 import com.example.fittrackerapp.entities.LastWorkoutRepository
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkout
+import com.example.fittrackerapp.entities.completedworkout.CompletedWorkoutRepository
 import com.example.fittrackerapp.entities.set.Set
 import com.example.fittrackerapp.entities.set.SetRepository
 import com.example.fittrackerapp.service.ServiceCommand
+import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +46,7 @@ class ExerciseRecordingService: Service() {
     @Inject lateinit var completedExerciseRepository: CompletedExerciseRepository
     @Inject lateinit var setsRepository: SetRepository
     @Inject lateinit var lastWorkoutRepository: LastWorkoutRepository
+    @Inject lateinit var completedWorkoutRepository: CompletedWorkoutRepository
 
     // --- Сервисные переменные ---
     private var isTimerStarted = false
@@ -49,7 +54,6 @@ class ExerciseRecordingService: Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
 
     private val _exerciseId = ExerciseRecordingCommunicator.exerciseId
-    private var completedExerciseId = ""
     private var plannedSets = 0
     private var plannedReps = 0
     private var plannedRestDuration = 0
@@ -153,22 +157,25 @@ class ExerciseRecordingService: Service() {
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun runExercise() {
 
-        completedExerciseId = UUID.randomUUID().toString()
+        _completedExerciseId.value = UUID.randomUUID().toString()
 
-        completedExercise = CompletedExercise(id = completedExerciseId, exerciseId = _exerciseId.value)
-        completedExerciseRepository.insert(completedExercise)
-
+        completedExercise = CompletedExercise(id = _completedExerciseId.value, exerciseId = _exerciseId.value)
+        serviceScope.launch {
+            completedExerciseRepository.insert(completedExercise)
+        }
         for (i in 1..plannedSets) {
             if (_workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
                 val setId = UUID.randomUUID().toString()
-                currentSet = Set(id = setId, completedExerciseId = _completedExerciseId.value, duration =  _setSeconds.value, reps = plannedReps, setNumber =  i)
+                currentSet = Set(id = setId, completedExerciseId = _completedExerciseId.value,
+                    duration =  _setSeconds.value, reps = plannedReps, setNumber =  i)
 
                 setsRepository.insert(currentSet)
                 setList.add(currentSet)
                 runRestTimer(plannedRestDuration)
-                currentSet = currentSet.copy(restDuration = _restSeconds.value)
+                currentSet = setList[i - 1].copy(restDuration = _restSeconds.value)
+                setsRepository.update(currentSet)
                 _restSeconds.value = 0
             }
         }
@@ -218,6 +225,9 @@ class ExerciseRecordingService: Service() {
         serviceScope.launch {
             lastWorkoutRepository.insertLastWorkout(completedExercise)
             Log.d("LastWorkout", "Last workout inserted")
+            _exerciseSeconds.value = 0
+            _setSeconds.value = 0
+            _restSeconds.value = 0
             _isSaveCompleted.value = true
         }
     }

@@ -184,6 +184,11 @@ class WorkoutRecordingService: Service() {
         serviceScope.launch {
             lastWorkoutRepository.insertLastWorkout(completedWorkout)
             Log.d("LastWorkout", "Last workout inserted")
+            _workoutSeconds.value = 0
+            _exerciseSeconds.value = 0
+            _setSeconds.value = 0
+            _restSeconds.value = 0
+            _exerciseRestSeconds.value = 0
             _isSaveCompleted.value = true
         }
     }
@@ -236,10 +241,9 @@ class WorkoutRecordingService: Service() {
                 }
             }
         }
-        _currentExecExercise.value = CompletedExercise(exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId.value)
-
         val currentExecExerciseId = UUID.randomUUID().toString()
-        _currentExecExercise.value = _currentExecExercise.value?.copy(id = currentExecExerciseId)
+        _currentExecExercise.value = CompletedExercise(id = currentExecExerciseId, exerciseId =  detail.exerciseId, completedWorkoutId = completedWorkoutId.value)
+
         completedExerciseRepository.insert(_currentExecExercise.value!!)
 
         for (i in 1..detail.setsNumber) {
@@ -247,14 +251,14 @@ class WorkoutRecordingService: Service() {
                 && _workoutCondition.value != WorkoutCondition.END) {
 
                 runSetTimer()
-                currentSet = Set(completedExerciseId = currentExecExerciseId,
-                    duration =_setSeconds.value, reps = detail.reps, setNumber = i)
                 val setId = UUID.randomUUID().toString()
-                currentSet = currentSet.copy(id = setId)
+                currentSet = Set(id = setId, completedExerciseId = currentExecExerciseId,
+                    duration =_setSeconds.value, reps = detail.reps, setNumber = i)
+
                 setsRepository.insert(currentSet)
                 setList.add(currentSet)
                 runRestTimer(detail.restDuration)
-                currentSet = currentSet.copy(restDuration = _restSeconds.value)
+                currentSet = setList[i - 1].copy(restDuration = _restSeconds.value)
                 setsRepository.update(currentSet)
                 _restSeconds.value = 0
             }

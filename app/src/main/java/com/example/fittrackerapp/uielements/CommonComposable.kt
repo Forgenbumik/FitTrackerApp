@@ -145,7 +145,7 @@ fun FileIcon(file: File) {
             bitmap = bitmap.asImageBitmap(),
             contentDescription = null,
             modifier = Modifier
-                .size(36.dp) // круглый аватар
+                .size(48.dp) // круглый аватар
                 .clip(CircleShape),
             contentScale = ContentScale.Crop
         )

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -45,6 +46,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -53,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.motionEventSpy
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -68,9 +71,6 @@ import com.example.fittrackerapp.ui.theme.DarkTeal
 import com.example.fittrackerapp.ui.theme.FirstTeal
 import com.example.fittrackerapp.uielements.CenteredPicker
 import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutActivity
-import com.example.fittrackerapp.uielements.completedworkout.CompletedWorkoutViewModel
-import com.example.fittrackerapp.uielements.completedworkout.ExercisesList
-import com.example.fittrackerapp.uielements.completedworkout.WorkoutInformation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -92,7 +92,7 @@ class CompletedExerciseActivity: ComponentActivity() {
                 }
             }
         }
-        exerciseName = intent.getStringExtra("exerciseName").toString()
+        exerciseName = intent.getStringExtra("exerciseName") ?: "Упражнение"
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -130,18 +130,26 @@ fun MainScreen(modifier: Modifier, exerciseName: String, onBackClick: () -> Unit
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            IconButton(onClick = { onBackClick() }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Назад",
-                    tint = Color(0xFF1B9AAA)
-                )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { onBackClick() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = Color(0xFF1B9AAA)
+                    )
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                Text(
+                    exerciseName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(8.dp))
-
             ExerciseInformation(setList)
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Прокручиваемая часть
@@ -364,6 +372,8 @@ fun NotesField(notes: MutableState<String?>, viewModel: CompletedExerciseViewMod
         unfocusedPlaceholderColor = Color.Gray
     )
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     TextField(
         value = notes.value.orEmpty(),
         onValueChange = { notes.value = it },
@@ -377,6 +387,7 @@ fun NotesField(notes: MutableState<String?>, viewModel: CompletedExerciseViewMod
         ),
         keyboardActions = KeyboardActions(
             onDone = {
+                keyboardController?.hide()
                 viewModel.saveWorkoutNotes(notes.value) // <- вызывается при нажатии галочки
             }
         )
